@@ -1,0 +1,20 @@
+{
+  "name": "zenifra",
+  "interface": {
+    "displayName": "Zenifra"
+  },
+  "plugins": [
+    {
+      "name": "zenifra",
+      "source": {
+        "source": "local",
+        "path": "./plugins/zenifra"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
