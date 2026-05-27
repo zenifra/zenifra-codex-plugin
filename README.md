@@ -19,6 +19,18 @@ zenifra auth login --code 123456
 zenifra orgs
 zenifra org set
 zenifra projects --type http
+zenifra project info --project <project-id>
+zenifra project url --project <project-id>
+zenifra project logs --project <project-id>
+zenifra project metrics --project <project-id>
+zenifra project network --project <project-id> --view summary
+zenifra project image set --project <project-id> --image <image>
+zenifra project envs --project <project-id>
+zenifra project env add --project <project-id> --name <name> --value <value>
+zenifra project env update --project <project-id> --name <name> --value <value>
+zenifra project env remove --project <project-id> --name <name>
+zenifra project instances --project <project-id>
+zenifra project instances set --project <project-id> --count <n>
 zenifra builds --project <project-id>
 zenifra deploy --project <project-id> --branch main
 zenifra deploy watch --project <project-id> --build <build-id>
@@ -32,6 +44,7 @@ zenifra deploy watch --project <project-id> --build <build-id>
 - Override de sessao: `ZENIFRA_CONFIG_DIR=/path/custom`
 
 Todos os comandos de listagem aceitam `--json`.
+Valores de envs sao mascarados por padrao; use `--show-values` somente quando o valor completo for necessario.
 
 ## Uso pelo Codex
 
