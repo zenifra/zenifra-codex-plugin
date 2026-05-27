@@ -1,0 +1,37 @@
+{
+  "name": "zenifra",
+  "version": "0.1.0",
+  "description": "Manage Zenifra projects and deployments from Codex and the terminal.",
+  "author": {
+    "name": "Zenifra"
+  },
+  "homepage": "https://zenifra.com/",
+  "repository": "https://github.com/zenifra/zenifra-codex-plugin",
+  "license": "MIT",
+  "keywords": [
+    "zenifra",
+    "deploy",
+    "projects",
+    "cloud",
+    "hosting"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Zenifra",
+    "shortDescription": "List projects and trigger Zenifra deployments.",
+    "longDescription": "Use Zenifra from Codex to authenticate, select an organization, list projects, create projects, trigger GitHub deployments, and watch build status.",
+    "developerName": "Zenifra",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://zenifra.com/",
+    "defaultPrompt": [
+      "List my Zenifra projects.",
+      "Deploy a Zenifra project.",
+      "Show my latest Zenifra builds."
+    ],
+    "brandColor": "#0F766E"
+  }
+}
