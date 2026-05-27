@@ -15,6 +15,7 @@ Depois disso, use:
 
 ```bash
 zenifra auth login
+zenifra help project logs
 zenifra auth login --code 123456
 zenifra orgs
 zenifra org set
@@ -44,6 +45,7 @@ zenifra deploy watch --project <project-id> --build <build-id>
 - Override de sessao: `ZENIFRA_CONFIG_DIR=/path/custom`
 
 Todos os comandos de listagem aceitam `--json`.
+Cada comando aceita `--help` e tambem pode ser consultado com `zenifra help <command>`.
 Valores de envs sao mascarados por padrao; use `--show-values` somente quando o valor completo for necessario.
 
 ## Uso pelo Codex

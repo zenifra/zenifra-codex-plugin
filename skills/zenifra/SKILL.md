@@ -23,6 +23,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 
 ## Common Workflows
 
+- Command-specific help: `zenifra help <command>` or `zenifra <command> --help`
 - Login: `zenifra auth login`
 - Select organization: `zenifra org set`
 - List projects: `zenifra projects --type http`
@@ -45,4 +46,5 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - It sends `Authorization: Bearer <token>` and `x-organization-id` when needed.
 - It defaults to `https://api.zenifra.com/v1`; set `ZENIFRA_API_URL` to override.
 - Prefer `--json` when another tool or script will consume the result.
+- Use `zenifra help <command>` when you need command-specific flags, usage examples, and output examples.
 - Env values are masked by default, including with `--json`; use `--show-values` only when the full value is required.
