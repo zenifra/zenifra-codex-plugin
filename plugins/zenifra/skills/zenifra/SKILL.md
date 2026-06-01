@@ -38,7 +38,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Remove a non-active profile: `zenifra profile remove staging`
 - Select organization for a user-login profile: `zenifra org set`
 - Compare public plan prices: `zenifra plans`, `zenifra plans --type http`, `zenifra plans --type storage --json`
-- List projects: `zenifra projects --type http`
+- List projects: `zenifra projects --type http --page 1 --limit 15`
 - Create a project from flags: `zenifra create project --name <name> --plan free --payment-mode hourly --config @project.json`
 - Run the interactive project wizard: `zenifra create project`
 - Get project info or URL: `zenifra project info --project <project-id>` or `zenifra project url --project <project-id>`
@@ -116,6 +116,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - `ZENIFRA_API_URL` overrides the active profile API base for the current command only.
 - The CLI sends `Authorization: Bearer <token>` and `x-organization-id` only when needed.
 - `zenifra plans` is a public read-only command and works without authentication.
+- `zenifra projects` is paginated; default to `--page 1 --limit 15` and request additional pages only when needed.
 - Prefer `--json` when another tool or script will consume the result.
 - `zenifra projects create` was removed; if you see it in old notes, use `zenifra create project` instead.
 - Running `zenifra create project` without flags opens the interactive wizard.

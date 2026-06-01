@@ -34,7 +34,7 @@ zenifra help project logs
 zenifra auth login --code 123456
 zenifra orgs
 zenifra org set
-zenifra projects --type http
+zenifra projects --type http --page 1 --limit 15
 zenifra project info --project <project-id>
 zenifra project url --project <project-id>
 zenifra project logs --project <project-id>
@@ -59,7 +59,7 @@ zenifra deploy watch --project <project-id> --build <build-id>
 - Sessao local: `~/.config/zenifra-cli/session.json`
 - Override de sessao: `ZENIFRA_CONFIG_DIR=/path/custom`
 
-Todos os comandos de listagem aceitam `--json`.
+Todos os comandos de listagem aceitam `--json`. `zenifra projects` e paginado; use `--page <n>` e `--limit <n>` para navegar sem carregar todos os projetos.
 Cada comando aceita `--help` e tambem pode ser consultado com `zenifra help <command>`.
 Valores de envs sao mascarados por padrao; use `--show-values` somente quando o valor completo for necessario.
 
