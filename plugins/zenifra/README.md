@@ -48,9 +48,15 @@ zenifra project env remove --project <project-id> --name <name>
 zenifra project instances --project <project-id>
 zenifra project instances set --project <project-id> --count <n>
 zenifra builds --project <project-id>
+zenifra builds logs --project <project-id> --build <build-id>
+zenifra builds logs --project <project-id> --build <build-id> --follow
 zenifra deploy --project <project-id> --branch main
 zenifra deploy watch --project <project-id> --build <build-id>
 ```
+
+Use `zenifra project logs` para logs da aplicacao rodando e `zenifra builds logs` para logs do build GitHub. `zenifra deploy` retorna um `build_id`, e `zenifra deploy watch` usa esse `build_id` para acompanhar status e logs incrementais em tempo real ate o fim do build.
+
+Se voce rodar comandos incompletos como `zenifra deploy`, `zenifra deploy watch` ou `zenifra builds` sem os argumentos obrigatorios, a CLI agora mostra a ajuda especifica do comando em vez de apenas um erro curto.
 
 ## Configuracao
 

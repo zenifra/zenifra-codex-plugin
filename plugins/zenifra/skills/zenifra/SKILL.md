@@ -43,13 +43,14 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Run the interactive project wizard: `zenifra create project`
 - Get project info or URL: `zenifra project info --project <project-id>` or `zenifra project url --project <project-id>`
 - Read runtime logs: `zenifra project logs --project <project-id> [--instance <instance-id>]`
+- Read GitHub build logs: `zenifra builds logs --project <project-id> --build <build-id> [--follow]`
 - Read CPU, memory, and network metrics: `zenifra project metrics --project <project-id> [--instance <instance-id>]`
 - Read network analytics: `zenifra project network --project <project-id> --view summary`
 - Update a project image: `zenifra project image set --project <project-id> --image <image>`
 - Manage envs: `zenifra project envs --project <project-id>`, `zenifra project env add/update/remove --project <project-id> --name <name>`
 - Manage instances: `zenifra project instances --project <project-id>` and `zenifra project instances set --project <project-id> --count <n>`
-- Trigger GitHub deploy: `zenifra deploy --project <project-id> --branch main`
-- Watch build: `zenifra deploy watch --project <project-id> --build <build-id>`
+- Trigger GitHub deploy and receive a `build_id`: `zenifra deploy --project <project-id> --branch main`
+- Watch that build with live logs: `zenifra deploy watch --project <project-id> --build <build-id>`
 - List builds: `zenifra builds --project <project-id>`
 - List deployments/builds: `zenifra deployments --project <project-id>`
 
@@ -118,10 +119,14 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - `zenifra plans` is a public read-only command and works without authentication.
 - `zenifra projects` is paginated; default to `--page 1 --limit 15` and request additional pages only when needed.
 - Prefer `--json` when another tool or script will consume the result.
+- `zenifra deploy` returns a `build_id`; use it with `zenifra deploy watch --project <project-id> --build <build-id>` to follow the build until completion.
+- `zenifra project logs` is for runtime logs. `zenifra builds logs` is for GitHub build logs.
+- `zenifra deploy watch` now streams incremental build logs until the build reaches a terminal status.
+- When a required argument is missing in commands like `zenifra deploy`, `zenifra deploy watch`, `zenifra builds`, or common `project` subcommands, the CLI now prints the command-specific help instead of only a terse validation error.
 - `zenifra projects create` was removed; if you see it in old notes, use `zenifra create project` instead.
 - Running `zenifra create project` without flags opens the interactive wizard.
 - `create project` does not assume silent defaults for `plan` or `payment_mode`.
 - `examples/http-project.json` is the HTTP OCI example, `examples/http-github-project.json` is the HTTP GitHub example, and the database examples match the current CLI contract.
 - Human success output for `create project` is a `Campo | Valor` table, and the displayed domain is normalized to a full `https://...` URL.
 - Env values are masked by default, including with `--json`; use `--show-values` only when the full value is required.
-- For broader product questions, consult `https://docs.zenifra.com/pt`.
+- For unanswered product questions, consult `https://docs.zenifra.com/llms.txt`.
