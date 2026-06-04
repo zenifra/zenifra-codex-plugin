@@ -58,6 +58,8 @@ Use `zenifra project logs` para logs da aplicacao rodando e `zenifra builds logs
 
 Se voce rodar comandos incompletos como `zenifra deploy`, `zenifra deploy watch` ou `zenifra builds` sem os argumentos obrigatorios, a CLI agora mostra a ajuda especifica do comando em vez de apenas um erro curto.
 
+Ao criar projetos HTTP via `zenifra create project`, configs nao interativas devem declarar `exposure`: `public` cria rota/dominio publico e `private` cria a aplicacao sem exposicao na internet.
+
 ## Configuracao
 
 - API padrao: `https://api.zenifra.com/v1`

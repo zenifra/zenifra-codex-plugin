@@ -77,9 +77,11 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - For HTTP projects, also confirm the deploy strategy:
   - OCI or image URL flow
   - GitHub flow
+  - exposure: `public` creates route/domain, `private` keeps the app without internet exposure
 - For HTTP via OCI, confirm at least:
   - image URL
   - whether the image is public or needs authentication
+  - exposure
   - port
   - instances
   - storage
@@ -91,6 +93,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
   - runtime
   - runtime version
   - start/build commands when applicable
+  - exposure
   - port
   - instances
   - storage
@@ -126,6 +129,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - `zenifra projects create` was removed; if you see it in old notes, use `zenifra create project` instead.
 - Running `zenifra create project` without flags opens the interactive wizard.
 - `create project` does not assume silent defaults for `plan` or `payment_mode`.
+- Non-interactive HTTP project configs must include `exposure`; use `private` when the user wants automation, workers, internal routines, or anything that should not receive a public domain.
 - `examples/http-project.json` is the HTTP OCI example, `examples/http-github-project.json` is the HTTP GitHub example, and the database examples match the current CLI contract.
 - Human success output for `create project` is a `Campo | Valor` table, and the displayed domain is normalized to a full `https://...` URL.
 - Env values are masked by default, including with `--json`; use `--show-values` only when the full value is required.
