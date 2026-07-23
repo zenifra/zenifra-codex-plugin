@@ -32,9 +32,11 @@ Depois disso, use:
 zenifra auth login
 zenifra help project logs
 zenifra auth login --code 123456
+zenifra auth logout --revoke
 zenifra orgs
 zenifra org set
 zenifra projects --type http --page 1 --limit 15
+zenifra create project --name app-http-autoscaling --plan premium --payment-mode hourly --config @examples/http-autoscaling-project.json
 zenifra project info --project <project-id>
 zenifra project url --project <project-id>
 zenifra project logs --project <project-id>
@@ -45,6 +47,11 @@ zenifra project envs --project <project-id>
 zenifra project env add --project <project-id> --name <name> --value <value>
 zenifra project env update --project <project-id> --name <name> --value <value>
 zenifra project env remove --project <project-id> --name <name>
+zenifra project autoscaling --project <project-id>
+zenifra project autoscaling set --project <project-id> --min 2 --max 8 --cpu 70 --memory 80
+zenifra project autoscaling disable --project <project-id>
+zenifra project autoscaling events --project <project-id> --direction scale_up --page 1 --limit 10
+zenifra project billing usage --project <project-id> --from 2026-06-01T00:00:00Z --to 2026-06-02T00:00:00Z --page 1 --limit 20 --json
 zenifra project instances --project <project-id>
 zenifra project instances set --project <project-id> --count <n>
 zenifra builds --project <project-id>
@@ -60,16 +67,22 @@ Se voce rodar comandos incompletos como `zenifra deploy`, `zenifra deploy watch`
 
 Ao criar projetos HTTP via `zenifra create project`, configs nao interativas devem declarar `exposure`: `public` cria rota/dominio publico e `private` cria a aplicacao sem exposicao na internet.
 
+Para criar um projeto HTTP pago com auto-scaling, use `config.instances` como o minimo inicial e `config.autoscaling.max_instances` como o limite maximo. Os alvos opcionais de CPU e memoria devem ficar entre 1 e 100, e `enabled` deve ser `true`. O recurso nao se aplica a planos `free` nem a projetos que nao sejam HTTP; o wizard so o oferece quando o plano permite auto-scaling.
+
+Use `zenifra project billing usage` para consultar, sem alterar o projeto, o consumo horario consolidado de computacao e armazenamento. Os filtros `--from` e `--to` aceitam datas ISO; `--page` e `--limit` controlam a paginacao, com limite maximo de 50; `--json` preserva a resposta estruturada para automacao. Essa consulta financeira e distinta das operacoes de configuracao e historico de auto-scaling.
+
 ## Configuracao
 
 - API padrao: `https://api.zenifra.com/v1`
 - Override: `ZENIFRA_API_URL=https://api-stg.zenifra.com/v1`
-- Sessao local: `~/.config/zenifra-cli/session.json`
+- Timeout de cada request HTTP: `ZENIFRA_HTTP_TIMEOUT_MS=30000`
+- Perfis locais: `~/.config/zenifra-cli/profiles.json`
 - Override de sessao: `ZENIFRA_CONFIG_DIR=/path/custom`
 
 Todos os comandos de listagem aceitam `--json`. `zenifra projects` e paginado; use `--page <n>` e `--limit <n>` para navegar sem carregar todos os projetos.
 Cada comando aceita `--help` e tambem pode ser consultado com `zenifra help <command>`.
 Valores de envs sao mascarados por padrao; use `--show-values` somente quando o valor completo for necessario.
+`zenifra auth logout` remove apenas a autenticacao local. Em perfis autenticados por login, use `zenifra auth logout --revoke` somente quando tambem quiser invalidar as sessoes do usuario no servidor; API keys sao revogadas pela organizacao.
 
 ## Uso pelo Codex
 
