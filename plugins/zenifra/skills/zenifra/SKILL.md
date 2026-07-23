@@ -29,7 +29,8 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Login on another profile: `zenifra auth login --profile staging`
 - Save an org API key on the active profile: `zenifra auth api-key --key znf_sua_chave`
 - Save an org API key on another profile: `zenifra auth api-key --profile prod --key znf_sua_chave`
-- Clear auth from a profile: `zenifra auth logout [--profile <name>]`
+- Clear only local auth from a profile: `zenifra auth logout [--profile <name>]`
+- Revoke user login sessions and then clear local auth: `zenifra auth logout [--profile <name>] --revoke`
 - List profiles: `zenifra profile list`
 - Show a profile: `zenifra profile show [name]`
 - Add a profile: `zenifra profile add --name staging --description Homologacao --api-base https://api-stg.zenifra.com/v1 --mode api-key --key znf_sua_chave`
@@ -41,11 +42,14 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - List projects: `zenifra projects --type http --page 1 --limit 15`
 - Create a project from flags: `zenifra create project --name <name> --plan free --payment-mode hourly --config @project.json`
 - Run the interactive project wizard: `zenifra create project`
+- Read hourly consumption and compute/storage costs: `zenifra project billing usage --project <project-id> [--from <ISO>] [--to <ISO>] [--page <n>] [--limit <n>] [--json]`
 - Get project info or URL: `zenifra project info --project <project-id>` or `zenifra project url --project <project-id>`
 - Read runtime logs: `zenifra project logs --project <project-id> [--instance <instance-id>]`
 - Read GitHub build logs: `zenifra builds logs --project <project-id> --build <build-id> [--follow]`
 - Read CPU, memory, and network metrics: `zenifra project metrics --project <project-id> [--instance <instance-id>]`
 - Read network analytics: `zenifra project network --project <project-id> --view summary`
+- Manage HTTP autoscaling: `zenifra project autoscaling --project <project-id>`, `zenifra project autoscaling set --project <project-id> --min <n> --max <n>`, and `zenifra project autoscaling disable --project <project-id>`
+- Read HTTP autoscaling history: `zenifra project autoscaling events --project <project-id> [--direction <scale_up|scale_down>] [--page <n>] [--limit <n>]`
 - Update a project image: `zenifra project image set --project <project-id> --image <image>`
 - Manage envs: `zenifra project envs --project <project-id>`, `zenifra project env add/update/remove --project <project-id> --name <name>`
 - Manage instances: `zenifra project instances --project <project-id>` and `zenifra project instances set --project <project-id> --count <n>`
@@ -60,6 +64,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - HTTP via GitHub: `zenifra create project --name app-http-github --plan basic --payment-mode hourly --config @examples/http-github-project.json`
 - PostgreSQL: `zenifra create project --name app-postgres --plan db-basic --payment-mode monthly --config @examples/postgresql-project.json`
 - MariaDB: `zenifra create project --name app-mariadb --plan db-basic --payment-mode monthly --config @examples/mariadb-project.json`
+- HTTP with autoscaling: `zenifra create project --name app-http-autoscaling --plan premium --payment-mode hourly --config @examples/http-autoscaling-project.json`
 - When the user prefers prompts instead of JSON, run `zenifra create project` and use the wizard.
 - Treat these examples as starting points, not as permission to assume production values.
 
@@ -86,6 +91,11 @@ node zenifra-cli/bin/zenifra.mjs <command>
   - instances
   - storage
   - envs
+- If HTTP autoscaling is requested during creation, also confirm:
+  - `config.instances` as the initial minimum instance count
+  - `config.autoscaling.max_instances` as a value greater than or equal to `config.instances`
+  - `config.autoscaling.target_cpu_utilization_percent` and `config.autoscaling.target_memory_utilization_percent` when provided, each between 1 and 100
+  - that the selected paid HTTP plan permits autoscaling
 - For HTTP via GitHub, confirm at least:
   - repository owner
   - repository name
@@ -113,12 +123,14 @@ node zenifra-cli/bin/zenifra.mjs <command>
 ## Behavior
 
 - The CLI stores profile data under `~/.config/zenifra-cli/profiles.json`.
-- If an old `session.json` exists and `profiles.json` does not, the CLI migrates it automatically into the `default` profile.
+- If an old `session.json` exists and `profiles.json` does not, the CLI migrates it automatically into the `default` profile and removes the legacy file.
 - The active profile is the local source of truth for `apiBaseUrl`, description, and saved credential.
 - Profile credentials can be either an org API key or a user access token; `selectedOrganizationId` only applies to user-login profiles.
 - `ZENIFRA_API_KEY` overrides the active profile credential for the current command only.
 - `ZENIFRA_API_URL` overrides the active profile API base for the current command only.
+- `ZENIFRA_HTTP_TIMEOUT_MS` configures the per-request HTTP timeout in milliseconds; the default is 30000.
 - The CLI sends `Authorization: Bearer <token>` and `x-organization-id` only when needed.
+- `zenifra auth logout` is local-only by default. Use `--revoke` only with a user-login profile when the user wants to invalidate their server sessions; API keys must be revoked through the organization.
 - `zenifra plans` is a public read-only command and works without authentication.
 - `zenifra projects` is paginated; default to `--page 1 --limit 15` and request additional pages only when needed.
 - Prefer `--json` when another tool or script will consume the result.
@@ -134,3 +146,6 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Human success output for `create project` is a `Campo | Valor` table, and the displayed domain is normalized to a full `https://...` URL.
 - Env values are masked by default, including with `--json`; use `--show-values` only when the full value is required.
 - For unanswered product questions, consult `https://docs.zenifra.com/llms.txt`.
+- `config.autoscaling` is accepted only for paid HTTP projects. It must use `enabled: true`; free plans and non-HTTP projects must be rejected before the API call.
+- The interactive wizard offers autoscaling only when the selected plan reports `permissions.allow_autoscaling === "true"`.
+- `zenifra project billing usage` is read-only and returns hourly compute and storage consumption; use `--from`, `--to`, `--page`, and `--limit` for bounded queries and `--json` for automation.

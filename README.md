@@ -35,6 +35,8 @@ O plugin orienta o Codex a usar os fluxos de build GitHub do CLI, incluindo:
 - `zenifra builds logs --project <project-id> --build <build-id> [--follow]`
 - `zenifra deploy --project <project-id> --branch main`
 - `zenifra deploy watch --project <project-id> --build <build-id>`
+- `zenifra project autoscaling events --project <project-id>`
+- `zenifra project billing usage --project <project-id> --json`
 
 Fluxo recomendado:
 
@@ -43,3 +45,5 @@ Fluxo recomendado:
 - `zenifra builds` lista o historico; `zenifra builds logs` reabre ou segue os logs de um build especifico
 
 Se voce rodar comandos incompletos como `zenifra deploy`, `zenifra deploy watch` ou `zenifra builds` sem os argumentos obrigatorios, a CLI agora mostra a ajuda especifica do comando.
+
+Para criacoes HTTP pagas com auto-scaling, a skill confirma o plano permitido, usa `config.instances` como minimo inicial e valida `max_instances`, CPU e memoria antes de chamar o CLI.
