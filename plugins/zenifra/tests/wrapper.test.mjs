@@ -61,5 +61,10 @@ test('documents current billing and autoscaling flows without the removed comman
   assert.match(readme, /project billing usage/);
   assert.match(readme, /auth logout --revoke/);
   assert.match(readme, /profiles\.json/);
+  assert.match(skill, /secret_access_key.*only at creation/i);
+  assert.match(skill, /Never repeat it/i);
+  assert.match(readme, /object-storage buckets delete/);
+  assert.match(readme, /object-storage keys revoke/);
+  assert.match(readme, /object-storage policy/);
   assert.doesNotMatch(`${skill}\n${readme}`, new RegExp(removedBillingCommand, 'i'));
 });

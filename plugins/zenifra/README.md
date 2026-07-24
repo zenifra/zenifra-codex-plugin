@@ -52,6 +52,16 @@ zenifra project autoscaling set --project <project-id> --min 2 --max 8 --cpu 70 
 zenifra project autoscaling disable --project <project-id>
 zenifra project autoscaling events --project <project-id> --direction scale_up --page 1 --limit 10
 zenifra project billing usage --project <project-id> --from 2026-06-01T00:00:00Z --to 2026-06-02T00:00:00Z --page 1 --limit 20 --json
+zenifra object-storage plans
+zenifra object-storage buckets list
+zenifra object-storage buckets create --name minha-aplicacao-assets --tier performance --quota 100
+zenifra object-storage buckets delete --bucket <bucket-id>
+zenifra object-storage keys list
+zenifra object-storage keys create --name backend-producao --bucket <bucket-id> --permissions bucket:list,object:read,object:write --prefixes uploads/,assets/
+zenifra object-storage keys revoke --key <key-id>
+zenifra object-storage usage
+zenifra object-storage policy --bucket <bucket-id> --config @policy.json
+zenifra object-storage cors --bucket <bucket-id> --config @cors.json
 zenifra project instances --project <project-id>
 zenifra project instances set --project <project-id> --count <n>
 zenifra builds --project <project-id>
@@ -70,6 +80,8 @@ Ao criar projetos HTTP via `zenifra create project`, configs nao interativas dev
 Para criar um projeto HTTP pago com auto-scaling, use `config.instances` como o minimo inicial e `config.autoscaling.max_instances` como o limite maximo. Os alvos opcionais de CPU e memoria devem ficar entre 1 e 100, e `enabled` deve ser `true`. O recurso nao se aplica a planos `free` nem a projetos que nao sejam HTTP; o wizard so o oferece quando o plano permite auto-scaling.
 
 Use `zenifra project billing usage` para consultar, sem alterar o projeto, o consumo horario consolidado de computacao e armazenamento. Os filtros `--from` e `--to` aceitam datas ISO; `--page` e `--limit` controlam a paginacao, com limite maximo de 50; `--json` preserva a resposta estruturada para automacao. Essa consulta financeira e distinta das operacoes de configuracao e historico de auto-scaling.
+
+Object Storage usa AWS CLI ou SDKs S3 para transferir objetos. A CLI Zenifra administra buckets, credenciais, políticas privadas, CORS e uso. O `--prefixes` limita uma credencial a caminhos específicos. Para policy/CORS, `--config` recebe o documento da policy ou CORS diretamente; a CLI o envia no contrato correto da API. O `secret_access_key` de uma nova credencial é mostrado apenas uma vez; guarde-o imediatamente no gerenciador de segredos aprovado e nunca o imprima novamente.
 
 ## Configuracao
 

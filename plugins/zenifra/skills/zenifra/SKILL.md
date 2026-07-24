@@ -24,7 +24,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 ## Common Workflows
 
 - Command-specific help: `zenifra help <command>` or `zenifra <command> --help`
-- Namespace help: `zenifra auth`, `zenifra profile`, `zenifra project`, `zenifra org`
+- Namespace help: `zenifra auth`, `zenifra profile`, `zenifra project`, `zenifra org`, `zenifra object-storage`
 - Login on the active profile: `zenifra auth login`
 - Login on another profile: `zenifra auth login --profile staging`
 - Save an org API key on the active profile: `zenifra auth api-key --key znf_sua_chave`
@@ -57,6 +57,12 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Watch that build with live logs: `zenifra deploy watch --project <project-id> --build <build-id>`
 - List builds: `zenifra builds --project <project-id>`
 - List deployments/builds: `zenifra deployments --project <project-id>`
+- List Object Storage plans and buckets: `zenifra object-storage plans`, `zenifra object-storage buckets list`
+- Create or remove a bucket: `zenifra object-storage buckets create --name <name> --tier <capacity|performance> --quota <GiB>`, `zenifra object-storage buckets delete --bucket <bucket-id>`
+- List and revoke Object Storage credentials: `zenifra object-storage keys list`, `zenifra object-storage keys revoke --key <key-id>`
+- Create a restricted Object Storage credential: `zenifra object-storage keys create --name <name> --bucket <bucket-id> --permissions bucket:list,object:read,object:write [--prefixes uploads/,assets/]`
+- Read Object Storage usage: `zenifra object-storage usage`
+- Read or manage private policy/CORS: `zenifra object-storage policy --bucket <bucket-id> [--config <json|@file>]`, `zenifra object-storage cors --bucket <bucket-id> [--config <json|@file>]`
 
 ## Create Examples
 
@@ -134,6 +140,10 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - `zenifra plans` is a public read-only command and works without authentication.
 - `zenifra projects` is paginated; default to `--page 1 --limit 15` and request additional pages only when needed.
 - Prefer `--json` when another tool or script will consume the result.
+- Object Storage data transfer stays in AWS CLI or S3-compatible SDKs. The Zenifra CLI manages only buckets, access, policy, CORS and usage.
+- `zenifra object-storage policy|cors --config` receives the policy or CORS document itself; the CLI wraps it in the management API contract. Prefix restrictions are comma-separated with `--prefixes` when creating a credential.
+- An Object Storage `secret_access_key` is revealed only at creation. Never repeat it in a later response, store it in workspace files, logs, or tool arguments. Tell the user to save it immediately in their approved secret manager.
+- Object Storage buckets are private. Do not propose public policies; use limited, temporary presigned URLs for external uploads or downloads.
 - `zenifra deploy` returns a `build_id`; use it with `zenifra deploy watch --project <project-id> --build <build-id>` to follow the build until completion.
 - `zenifra project logs` is for runtime logs. `zenifra builds logs` is for GitHub build logs.
 - `zenifra deploy watch` now streams incremental build logs until the build reaches a terminal status.
