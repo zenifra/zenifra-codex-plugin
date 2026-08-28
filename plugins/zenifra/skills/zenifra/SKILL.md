@@ -7,6 +7,49 @@ description: Use when the user wants to manage Zenifra projects, profiles, organ
 
 Use the Zenifra CLI for product operations.
 
+## Public repository boundary
+
+This skill lives in a public repository and is limited to the public `zenifra-cli` and documented product concepts. Never commit or paste passwords, TOTP codes, API keys, access tokens, connection strings, customer data, private project identifiers, or unredacted command output. Never mention or expose private architecture, internal infrastructure, internal service names, operational runbooks, or development-tool details. Do not call private or undocumented API endpoints to compensate for a missing CLI command.
+
+## Safe operation rules
+
+- Treat read-only commands and mutating commands differently. Listing, plan catalogs, project info, URLs, logs, metrics, capabilities, builds, deployments, billing usage, Valkey status, and profile inspection are read-oriented; create, deploy, image, exposure, environment, instance, autoscaling, credential rotation, logout with `--revoke`, and profile changes have side effects.
+- Before a mutation, verify the exact profile, API base, organization, project, branch or commit, and intended values. Production mutations require explicit user scope; never infer them from a name such as `prod`.
+- Use `--idempotency-key` for project creation and Valkey credential rotation when a retry may happen. Retry only with the same key and only after inspecting the previous response; do not mask authentication, authorization, validation, setup, or cleanup failures with generic retries.
+- After every external mutation, read back the final state. A successful request or an accepted asynchronous operation is not proof that the desired state was reached.
+- When a requested capability is not exposed by the CLI, say so instead of inventing a command or using an undocumented endpoint. The CLI currently does not expose a project deletion command.
+
+## Authentication safety
+
+- Prefer the interactive prompt for passwords, TOTP codes, and API keys. Never place passwords, TOTP codes, API keys, tokens, or connection strings in committed examples, shell history, logs, or assistant responses.
+- `auth login` may require email, password, and a verification challenge. `--code` is available for automation only when the caller has already handled secret redaction and secure input.
+- `auth api-key` validates the `znf_` prefix locally but does not prove that the key is active; verify the first authorized read operation without printing the key.
+- Keep user-login tokens and organization API keys conceptually separate. API keys are organization-bound and do not need `org set`; user-login profiles may need `org set`.
+- For tests, previews, or temporary validation, set `ZENIFRA_CONFIG_DIR` to a temporary directory so the user's normal profile store is not changed. Remove the temporary directory after verification.
+
+## Valkey-specific guidance
+
+- For Valkey projects, query `zenifra project metrics capabilities --project <project-id>` before requesting a snapshot when access is unknown.
+- `availability: unavailable` with `valkey: null` is a valid result while the first snapshot is not ready. Do not convert `null` or `unavailable` into zero and do not claim that a metric was collected.
+- Native Valkey `memory.used_bytes` is the memory currently used by Valkey; `memory.limit_bytes` is Valkey's configured limit and may differ from the instance capacity.
+- The legacy top-level `memory` value in the metrics response is current instance/container usage in bytes, not provisioned capacity. Do not label it as capacity unless the API exposes a dedicated capacity field.
+- Valkey profiles are `key_value`, `cache`, and `queue`. Cache adds hits, misses, and hit ratio; Key Value adds key inventory; Queue must not receive an invented queue-depth value.
+- `valkey credentials rotate` returns an asynchronous operation. Use `--wait` or the returned operation identifier with `valkey credentials status`, and save a newly returned connection value only in a secure local destination.
+
+## Output and asynchronous operations
+
+- Human output is for direct inspection. `--json` preserves the public response for ordinary commands; do not parse table columns as an API contract.
+- `deploy watch --json` emits one JSON object per line while streaming build events, not one final JSON document. `builds logs --follow` similarly streams incremental output.
+- Project creation, deployment, and credential rotation may be asynchronous. Capture the returned identifier, poll with the supported command, and report the terminal state or the actual blocker.
+- Environment values and credentials are masked by default. Never use `--show-values` unless the user explicitly requires it, and never include the revealed value in a report.
+
+## Error handling and pagination
+
+- Distinguish authentication failures, authorization failures, validation failures, plan restrictions, rate limits, network timeouts, and asynchronous operation failures. Report the actual category and next supported action.
+- A `401` means the credential or session needs attention; a `403` means the authenticated principal lacks permission; a metrics plan restriction must not be treated as a transient network error; a `429` may include a retry interval.
+- Projects, builds, deployments, autoscaling events, and billing usage are paginated. Use the returned pagination fields and do not claim that one page is the complete result.
+- For deploys where the exact revision matters, pass `--commit-sha` and preserve the supplied identifier literally. Verify the resulting build's commit before claiming that the intended revision was published.
+
 ## Command
 
 Prefer the public CLI command when it is installed:
@@ -43,6 +86,8 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Create a project from flags: `zenifra create project --name <name> --plan free --payment-mode hourly --config @project.json`
 - Run the interactive project wizard: `zenifra create project`
 - Read hourly consumption and compute/storage costs: `zenifra project billing usage --project <project-id> [--from <ISO>] [--to <ISO>] [--page <n>] [--limit <n>] [--json]`
+- Read Valkey status and masked connection data: `zenifra valkey status --project <project-id>` and `zenifra valkey connection --project <project-id>`
+- Rotate a Valkey credential and follow the operation: `zenifra valkey credentials rotate --project <project-id> [--wait]` or `zenifra valkey credentials status --project <project-id> --operation <operation-id>`
 - Get project info or URL: `zenifra project info --project <project-id>` or `zenifra project url --project <project-id>`
 - Read runtime logs: `zenifra project logs --project <project-id> [--instance <instance-id>]`
 - Read GitHub build logs: `zenifra builds logs --project <project-id> --build <build-id> [--follow]`

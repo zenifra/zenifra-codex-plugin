@@ -63,3 +63,15 @@ test('documents current billing and autoscaling flows without the removed comman
   assert.match(readme, /profiles\.json/);
   assert.doesNotMatch(`${skill}\n${readme}`, new RegExp(removedBillingCommand, 'i'));
 });
+
+test('documents public safety boundaries and CLI automation semantics', async () => {
+  const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
+
+  assert.match(skill, /public repository/);
+  assert.match(skill, /Never place passwords, TOTP codes, API keys, tokens/);
+  assert.match(skill, /idempotency-key/);
+  assert.match(skill, /one JSON object per line/);
+  assert.match(skill, /does not expose a project deletion command/);
+  assert.match(skill, /Do not call private or undocumented API endpoints/);
+  assert.match(skill, /read back the final state/);
+});
