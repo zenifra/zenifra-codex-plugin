@@ -73,10 +73,12 @@ Use `zenifra project billing usage` para consultar, sem alterar o projeto, o con
 
 ## Login OAuth e organizacoes
 
+Enderecos em `example.test` sao ficticios; substitua pela API autorizada do seu ambiente.
+
 O login OAuth e da conta do usuario, nao de uma organizacao especifica. Selecione a organizacao uma vez; a escolha fica salva no perfil:
 
 ```bash
-zenifra auth login --oauth --profile staging --api-base https://api-stg.zenifra.com/v1
+zenifra auth login --oauth --profile staging --api-base https://api.example.test/v1
 zenifra orgs
 zenifra org set --org <organization-id>
 zenifra projects
@@ -92,7 +94,7 @@ A renovacao da sessao e automatica. Cada perfil OAuth pertence a uma API: use pe
 ## Configuracao
 
 - API padrao: `https://api.zenifra.com/v1`
-- Override: `ZENIFRA_API_URL=https://api-stg.zenifra.com/v1`
+- Override: `ZENIFRA_API_URL=https://api.example.test/v1`
 - Timeout padrao de cada request HTTP: cinco minutos (`ZENIFRA_HTTP_TIMEOUT_MS=300000`)
 - Perfis locais: `~/.config/zenifra-cli/profiles.json`
 - Override de sessao: `ZENIFRA_CONFIG_DIR=/path/custom`

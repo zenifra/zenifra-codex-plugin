@@ -29,6 +29,8 @@ This skill lives in a public repository and is limited to the public `zenifra-cl
 
 ## OAuth login and organization selection
 
+Example hosts under `example.test` are placeholders. Resolve the actual API from the requested target or saved profile before running a command.
+
 - `zenifra auth login --oauth` opens the browser for account sign-in, verification and consent. Without `--oauth`, the existing email/password flow remains available. Do not combine `--oauth` with password, verification-code or API-key flags.
 - OAuth grants belong to the user account, not to one organization. They allow access only within the user's current permissions in each organization; consent does not add a role or bypass organization access checks.
 - Read permission is required. Requested write permission is an explicit choice in consent; `--read-only` requests only read access. A read-only grant cannot create projects, deploy or change settings, even for an organization owner.
@@ -37,7 +39,7 @@ This skill lives in a public repository and is limited to the public `zenifra-cl
 - An OAuth login updates or creates the requested `--profile`, makes it active and clears that profile's previous organization selection. API-key profiles remain organization-bound and do not use this selection flow.
 
 ```bash
-zenifra auth login --oauth --profile staging --api-base https://api-stg.zenifra.com/v1
+zenifra auth login --oauth --profile staging --api-base https://api.example.test/v1
 zenifra orgs
 zenifra org set --org <organization-id>
 zenifra projects
@@ -96,14 +98,14 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Namespace help: `zenifra auth`, `zenifra profile`, `zenifra project`, `zenifra org`
 - Browser login on the active profile: `zenifra auth login --oauth`
 - Password login on the active profile: `zenifra auth login`
-- Browser login on an explicit environment/profile: `zenifra auth login --oauth --profile staging --api-base https://api-stg.zenifra.com/v1`
+- Browser login on an explicit environment/profile: `zenifra auth login --oauth --profile staging --api-base https://api.example.test/v1`
 - Save an org API key on the active profile: `zenifra auth api-key --key znf_sua_chave`
 - Save an org API key on another profile: `zenifra auth api-key --profile prod --key znf_sua_chave`
 - Clear only local auth from a profile: `zenifra auth logout [--profile <name>]`
 - Revoke the OAuth connection (OAuth profile) or server login sessions (password profile), then clear local auth: `zenifra auth logout [--profile <name>] --revoke`
 - List profiles: `zenifra profile list`
 - Show a profile: `zenifra profile show [name]`
-- Add a profile: `zenifra profile add --name staging --description Homologacao --api-base https://api-stg.zenifra.com/v1 --mode api-key --key znf_sua_chave`
+- Add a profile: `zenifra profile add --name staging --description Homologacao --api-base https://api.example.test/v1 --mode api-key --key znf_sua_chave`
 - Switch the active profile: `zenifra profile use staging`
 - Edit a profile: `zenifra profile edit staging --description "Homologacao interna"`
 - Remove a non-active profile: `zenifra profile remove staging`
