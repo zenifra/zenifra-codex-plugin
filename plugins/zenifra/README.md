@@ -29,7 +29,7 @@ npm link
 Depois disso, use:
 
 ```bash
-zenifra auth login
+zenifra auth login --oauth
 zenifra help project logs
 zenifra auth login --code 123456
 zenifra auth logout --revoke
@@ -71,18 +71,36 @@ Para criar um projeto HTTP pago com auto-scaling, use `config.instances` como o 
 
 Use `zenifra project billing usage` para consultar, sem alterar o projeto, o consumo horario consolidado de computacao e armazenamento. Os filtros `--from` e `--to` aceitam datas ISO; `--page` e `--limit` controlam a paginacao, com limite maximo de 50; `--json` preserva a resposta estruturada para automacao. Essa consulta financeira e distinta das operacoes de configuracao e historico de auto-scaling.
 
+## Login OAuth e organizacoes
+
+O login OAuth e da conta do usuario, nao de uma organizacao especifica. Selecione a organizacao uma vez; a escolha fica salva no perfil:
+
+```bash
+zenifra auth login --oauth --profile staging --api-base https://api-stg.zenifra.com/v1
+zenifra orgs
+zenifra org set --org <organization-id>
+zenifra projects
+zenifra create project
+```
+
+Com apenas uma organizacao disponivel, o CLI a seleciona automaticamente quando necessario. Para usar outra apenas em um comando, passe `--org <organization-id>`. Um novo login OAuth limpa a selecao anterior desse perfil.
+
+O consentimento exige leitura e permite aprovar escrita explicitamente. Use `--read-only` para solicitar somente leitura e `--no-browser` para abrir o endereco manualmente na mesma maquina. As permissoes atuais do usuario em cada organizacao continuam valendo; OAuth nao concede novos cargos ou acessos.
+
+A renovacao da sessao e automatica. Cada perfil OAuth pertence a uma API: use perfis separados para ambientes diferentes. `ZENIFRA_API_KEY` continua tendo prioridade e o CLI avisa quando ela substitui a autenticacao OAuth. A confirmacao final de login aparece no terminal.
+
 ## Configuracao
 
 - API padrao: `https://api.zenifra.com/v1`
 - Override: `ZENIFRA_API_URL=https://api-stg.zenifra.com/v1`
-- Timeout de cada request HTTP: `ZENIFRA_HTTP_TIMEOUT_MS=30000`
+- Timeout padrao de cada request HTTP: cinco minutos (`ZENIFRA_HTTP_TIMEOUT_MS=300000`)
 - Perfis locais: `~/.config/zenifra-cli/profiles.json`
 - Override de sessao: `ZENIFRA_CONFIG_DIR=/path/custom`
 
 Todos os comandos de listagem aceitam `--json`. `zenifra projects` e paginado; use `--page <n>` e `--limit <n>` para navegar sem carregar todos os projetos.
 Cada comando aceita `--help` e tambem pode ser consultado com `zenifra help <command>`.
 Valores de envs sao mascarados por padrao; use `--show-values` somente quando o valor completo for necessario.
-`zenifra auth logout` remove apenas a autenticacao local. Em perfis autenticados por login, use `zenifra auth logout --revoke` somente quando tambem quiser invalidar as sessoes do usuario no servidor; API keys sao revogadas pela organizacao.
+`zenifra auth logout` remove apenas a autenticacao local. Em um perfil OAuth, `--revoke` revoga somente aquela conexao. Em um perfil de login por senha, `--revoke` invalida as sessoes do usuario no servidor. API keys sao revogadas pela organizacao.
 
 ## Uso pelo Codex
 

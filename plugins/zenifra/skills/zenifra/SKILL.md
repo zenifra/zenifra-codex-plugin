@@ -27,6 +27,32 @@ This skill lives in a public repository and is limited to the public `zenifra-cl
 - Keep user-login tokens and organization API keys conceptually separate. API keys are organization-bound and do not need `org set`; user-login profiles may need `org set`.
 - For tests, previews, or temporary validation, set `ZENIFRA_CONFIG_DIR` to a temporary directory so the user's normal profile store is not changed. Remove the temporary directory after verification.
 
+## OAuth login and organization selection
+
+- `zenifra auth login --oauth` opens the browser for account sign-in, verification and consent. Without `--oauth`, the existing email/password flow remains available. Do not combine `--oauth` with password, verification-code or API-key flags.
+- OAuth grants belong to the user account, not to one organization. They allow access only within the user's current permissions in each organization; consent does not add a role or bypass organization access checks.
+- Read permission is required. Requested write permission is an explicit choice in consent; `--read-only` requests only read access. A read-only grant cannot create projects, deploy or change settings, even for an organization owner.
+- `zenifra orgs` lists available organizations. `zenifra org set --org <id>` saves the selection in the active profile, so subsequent organization-scoped commands do not need repeated `--org` flags.
+- With no selection, the CLI selects and saves the only available organization, or prompts for a choice when several exist. For unattended use, select the organization first or pass `--org <id>` on the command. An explicit `--org` overrides the saved selection only for that command.
+- An OAuth login updates or creates the requested `--profile`, makes it active and clears that profile's previous organization selection. API-key profiles remain organization-bound and do not use this selection flow.
+
+```bash
+zenifra auth login --oauth --profile staging --api-base https://api-stg.zenifra.com/v1
+zenifra orgs
+zenifra org set --org <organization-id>
+zenifra projects
+zenifra create project
+zenifra projects --org <another-organization-id>
+```
+
+- Without an explicit API base, the CLI uses its profile/override configuration and otherwise defaults to production. Use an explicit environment for tests; do not assume a profile name selects an API.
+- `--no-browser` prints the authorization URL to open manually on the same machine. The callback uses a temporary local loopback port. The browser page acknowledges receipt; the terminal confirms that the login was completed and saved. `Ctrl+C` cancels the pending login.
+- Tokens are stored in the private local profile and renewed automatically before expiry. Concurrent commands coordinate refresh; do not manually edit or expose tokens. If renewal is rejected, sign in again. Mutations are not automatically replayed.
+- OAuth profiles are bound to their API. Changing `--api-base` or `ZENIFRA_API_URL` does not authorize forwarding that profile's token to another API; use another profile and login for that environment.
+- `ZENIFRA_API_KEY` still takes precedence for a command and produces a warning when replacing an OAuth profile credential. Check this precedence when diagnosing unexpected authorization behavior without printing the key.
+- `zenifra auth logout` is local-only by default and clears the profile authentication. For an OAuth profile, `zenifra auth logout --revoke` revokes only that profile's OAuth connection; it does not invalidate the user's other logins. Revocation is also available in the Console's connected integrations. A failed remote revocation preserves the local profile; do not remove it and claim cleanup succeeded.
+- For a password-login profile, `auth logout --revoke` invalidates the user's server login sessions. API keys must be revoked through the organization. Distinguish these effects before choosing a logout mode.
+
 ## Valkey-specific guidance
 
 - For Valkey projects, query `zenifra project metrics capabilities --project <project-id>` before requesting a snapshot when access is unknown.
@@ -68,12 +94,13 @@ node zenifra-cli/bin/zenifra.mjs <command>
 
 - Command-specific help: `zenifra help <command>` or `zenifra <command> --help`
 - Namespace help: `zenifra auth`, `zenifra profile`, `zenifra project`, `zenifra org`
-- Login on the active profile: `zenifra auth login`
-- Login on another profile: `zenifra auth login --profile staging`
+- Browser login on the active profile: `zenifra auth login --oauth`
+- Password login on the active profile: `zenifra auth login`
+- Browser login on an explicit environment/profile: `zenifra auth login --oauth --profile staging --api-base https://api-stg.zenifra.com/v1`
 - Save an org API key on the active profile: `zenifra auth api-key --key znf_sua_chave`
 - Save an org API key on another profile: `zenifra auth api-key --profile prod --key znf_sua_chave`
 - Clear only local auth from a profile: `zenifra auth logout [--profile <name>]`
-- Revoke user login sessions and then clear local auth: `zenifra auth logout [--profile <name>] --revoke`
+- Revoke the OAuth connection (OAuth profile) or server login sessions (password profile), then clear local auth: `zenifra auth logout [--profile <name>] --revoke`
 - List profiles: `zenifra profile list`
 - Show a profile: `zenifra profile show [name]`
 - Add a profile: `zenifra profile add --name staging --description Homologacao --api-base https://api-stg.zenifra.com/v1 --mode api-key --key znf_sua_chave`
@@ -116,7 +143,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 ## Before Creating Projects
 
 - Project creation can generate cost for the customer. Do not guess values that affect billing or infrastructure shape.
-- Before suggesting a plan or comparing cost, prefer running `zenifra plans` so the user sees the current HTTP, database, and storage catalogs.
+- Before suggesting a plan or comparing cost, prefer running `zenifra plans` so the user sees the current HTTP, database, and storage catalogs. The `db-free` plan supports PostgreSQL and Valkey Key Value, not MariaDB.
 - Before running `zenifra create project`, confirm the minimum required inputs with the user.
 - Always confirm:
   - `type_project`
@@ -170,12 +197,12 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - The CLI stores profile data under `~/.config/zenifra-cli/profiles.json`.
 - If an old `session.json` exists and `profiles.json` does not, the CLI migrates it automatically into the `default` profile and removes the legacy file.
 - The active profile is the local source of truth for `apiBaseUrl`, description, and saved credential.
-- Profile credentials can be either an org API key or a user access token; `selectedOrganizationId` only applies to user-login profiles.
+- Profile credentials can be an organization API key, password-login token or OAuth session with automatic renewal. `selectedOrganizationId` applies to password-login and OAuth profiles.
 - `ZENIFRA_API_KEY` overrides the active profile credential for the current command only.
 - `ZENIFRA_API_URL` overrides the active profile API base for the current command only.
-- `ZENIFRA_HTTP_TIMEOUT_MS` configures the per-request HTTP timeout in milliseconds; the default is 30000.
+- `ZENIFRA_HTTP_TIMEOUT_MS` configures the per-request HTTP timeout in milliseconds; the default is 300000 (five minutes). A timeout does not prove that project creation failed: check the resulting state before repeating with the same idempotency key.
 - The CLI sends `Authorization: Bearer <token>` and `x-organization-id` only when needed.
-- `zenifra auth logout` is local-only by default. Use `--revoke` only with a user-login profile when the user wants to invalidate their server sessions; API keys must be revoked through the organization.
+- Logout and remote revocation depend on the profile authentication mode; follow the OAuth login section above.
 - `zenifra plans` is a public read-only command and works without authentication.
 - `zenifra projects` is paginated; default to `--page 1 --limit 15` and request additional pages only when needed.
 - Prefer `--json` when another tool or script will consume the result.
