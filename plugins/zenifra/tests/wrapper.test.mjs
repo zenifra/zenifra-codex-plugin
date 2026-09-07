@@ -75,3 +75,19 @@ test('documents public safety boundaries and CLI automation semantics', async ()
   assert.match(skill, /Do not call private or undocumented API endpoints/);
   assert.match(skill, /read back the final state/);
 });
+
+test('documents product-level mutation preflight and safe MCP/Valkey verification', async () => {
+  const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+  const publicDocs = `${skill}\n${readme}`;
+
+  assert.match(publicDocs, /profile show --json/);
+  assert.match(publicDocs, /orgs --json/);
+  assert.match(publicDocs, /idempotency key/i);
+  assert.match(publicDocs, /DNS\/TLS/);
+  assert.match(publicDocs, /protected-resource/);
+  assert.match(publicDocs, /401.*bearer challenge|bearer challenge.*401/i);
+  assert.match(publicDocs, /--connection-file/);
+  assert.match(publicDocs, /exact.*string.*backend/i);
+  assert.match(publicDocs, /rediss:\/\//);
+});

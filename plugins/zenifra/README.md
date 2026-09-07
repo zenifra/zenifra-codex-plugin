@@ -63,6 +63,12 @@ zenifra deploy watch --project <project-id> --build <build-id>
 
 Use `zenifra project logs` para logs da aplicacao rodando e `zenifra builds logs` para logs do build GitHub. `zenifra deploy` retorna um `build_id`, e `zenifra deploy watch` usa esse `build_id` para acompanhar status e logs incrementais em tempo real ate o fim do build.
 
+Antes de uma mutacao, confirme o perfil, a API e a organizacao ativa. Em seguida, confirme o plano, o pagamento, o tipo de projeto, o dominio e o metodo de deploy. Depois da chamada, leia o estado final, a URL e o build/deployment; uma resposta aceita nao prova que o projeto esta pronto.
+
+Para dominios personalizados, mantenha o dominio principal separado e aguarde DNS/TLS antes de concluir. Para MCP, use a URL completa terminada em `/mcp`, confira a descoberta do recurso e aceite `401` como o desafio esperado antes do OAuth.
+
+Conexoes Valkey permanecem mascaradas. Quando uma rotacao concluida devolver uma conexao utilizavel, use `--connection-file <path>` em um destino privado; o arquivo preserva exatamente a string retornada pelo backend. Nao inclua a conexao em mensagens, logs ou commits.
+
 Se voce rodar comandos incompletos como `zenifra deploy`, `zenifra deploy watch` ou `zenifra builds` sem os argumentos obrigatorios, a CLI agora mostra a ajuda especifica do comando em vez de apenas um erro curto.
 
 Ao criar projetos HTTP via `zenifra create project`, configs nao interativas devem declarar `exposure`: `public` cria rota/dominio publico e `private` cria a aplicacao sem exposicao na internet.

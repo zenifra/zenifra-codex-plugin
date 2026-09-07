@@ -19,6 +19,33 @@ This skill lives in a public repository and is limited to the public `zenifra-cl
 - After every external mutation, read back the final state. A successful request or an accepted asynchronous operation is not proof that the desired state was reached.
 - When a requested capability is not exposed by the CLI, say so instead of inventing a command or using an undocumented endpoint. The CLI currently does not expose a project deletion command.
 
+## Mutation workflow
+
+Before any production mutation, make the target explicit:
+
+1. Inspect the active profile with `zenifra profile show --json` and verify the API base.
+2. For a user-login profile, run `zenifra orgs --json` and select the organization with `zenifra org set --org <id>` or pass `--org <id>` for one command. An OAuth grant belongs to the account; it does not change organization membership.
+3. Read the current plan catalog with `zenifra plans` and confirm the project type, plan, payment mode, storage, exposure, deploy source, port, instances, and initial environments.
+4. Use an idempotency key for project creation and Valkey credential rotation. If a request times out, inspect the resulting project or operation before retrying with the same key.
+5. After the mutation, read the project URL and status, then follow the build or deployment identifier until it reaches a terminal state.
+
+Treat a project as ready only after the public URL, DNS/TLS, and the product health or OAuth behavior expected for that project have been checked. A created project or successful API response alone is not readiness.
+
+## Domains and MCP OAuth
+
+The primary project URL and a custom domain are separate values. Do not add the primary URL again as a custom domain. After adding a custom domain, wait for DNS/TLS and read the project URL back before reporting success. For an MCP connection, verify the exact `/mcp` URL, protected-resource discovery, and the unauthenticated `401` bearer challenge; that `401` is expected before OAuth authorization.
+
+Use product-level recovery guidance:
+
+- `401`: sign in again or reconnect the OAuth connection.
+- `403`: confirm the selected organization and permissions.
+- `404`: confirm the project ID, URL, path, and whether the operation is supported by the selected project type.
+- `409`: inspect the existing resource and reuse the same idempotency key when retrying a known operation.
+- `429`: wait for the indicated retry interval.
+- `502`, DNS/TLS failure, or readiness timeout: inspect project status, build/deployment state, public URL, and logs before retrying.
+
+Do not describe these situations using implementation details or expose raw provider responses.
+
 ## Authentication safety
 
 - Prefer the interactive prompt for passwords, TOTP codes, and API keys. Never place passwords, TOTP codes, API keys, tokens, or connection strings in committed examples, shell history, logs, or assistant responses.
@@ -63,6 +90,7 @@ zenifra projects --org <another-organization-id>
 - The legacy top-level `memory` value in the metrics response is current instance/container usage in bytes, not provisioned capacity. Do not label it as capacity unless the API exposes a dedicated capacity field.
 - Valkey profiles are `key_value`, `cache`, and `queue`. Cache adds hits, misses, and hit ratio; Key Value adds key inventory; Queue must not receive an invented queue-depth value.
 - `valkey credentials rotate` returns an asynchronous operation. Use `--wait` or the returned operation identifier with `valkey credentials status`, and save a newly returned connection value only in a secure local destination.
+- `zenifra valkey connection` remains masked by design. A usable connection from a completed rotation may be written with an explicit private `--connection-file <path>`; the file preserves the exact connection string returned by the backend. Never paste it into chat, commit it, or place it in a public example. If a consuming client requires `rediss://` instead of a backend-returned `valkeys://`, adapt the value only in that client's private configuration, keeping the host, port, credentials, and parameters unchanged; never alter the CLI output or the saved backend value.
 
 ## Output and asynchronous operations
 
@@ -95,7 +123,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 ## Common Workflows
 
 - Command-specific help: `zenifra help <command>` or `zenifra <command> --help`
-- Namespace help: `zenifra auth`, `zenifra profile`, `zenifra project`, `zenifra org`
+- Command group help: `zenifra auth`, `zenifra profile`, `zenifra project`, `zenifra org`
 - Browser login on the active profile: `zenifra auth login --oauth`
 - Password login on the active profile: `zenifra auth login`
 - Browser login on an explicit environment/profile: `zenifra auth login --oauth --profile staging --api-base https://api.example.test/v1`
