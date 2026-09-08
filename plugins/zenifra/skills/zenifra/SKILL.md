@@ -35,6 +35,8 @@ Treat a project as ready only after the public URL, DNS/TLS, and the product hea
 
 The primary project URL and a custom domain are separate values. Do not add the primary URL again as a custom domain. After adding a custom domain, wait for DNS/TLS and read the project URL back before reporting success. For an MCP connection, verify the exact `/mcp` URL, protected-resource discovery, and the unauthenticated `401` bearer challenge; that `401` is expected before OAuth authorization.
 
+The MCP server publishes raw tool names without a product prefix: `get_context`, `list_projects`, `get_project`, `get_project_metrics`, `list_builds`, `list_ai_keys`, `get_ai_usage`, `get_project_billing`, and `list_transactions`. A client may prepend its configured server name, so server `zenifra` plus raw tool `get_context` can appear as `zenifra_get_context`. Never add the server namespace to a tool name that already contains it.
+
 Use product-level recovery guidance:
 
 - `401`: sign in again or reconnect the OAuth connection.

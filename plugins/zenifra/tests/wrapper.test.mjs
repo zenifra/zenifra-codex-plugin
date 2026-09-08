@@ -91,3 +91,14 @@ test('documents product-level mutation preflight and safe MCP/Valkey verificatio
   assert.match(publicDocs, /exact.*string.*backend/i);
   assert.match(publicDocs, /rediss:\/\//);
 });
+
+test('documents raw MCP tool names without repeating the server namespace', async () => {
+  const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+  const publicDocs = `${skill}\n${readme}`;
+
+  assert.match(publicDocs, /get_context/);
+  assert.match(publicDocs, /list_ai_keys/);
+  assert.match(publicDocs, /server.*tool|tool.*server/i);
+  assert.doesNotMatch(publicDocs, /zenifra_zenifra_/);
+});
