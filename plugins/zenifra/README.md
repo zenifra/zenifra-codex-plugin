@@ -36,7 +36,9 @@ zenifra auth logout --revoke
 zenifra orgs
 zenifra org set
 zenifra projects --type http --page 1 --limit 15
+zenifra plans --type job --json
 zenifra create project --name app-http-autoscaling --plan premium --payment-mode hourly --config @examples/http-autoscaling-project.json
+zenifra create project --name nightly-report --plan job-basic --payment-mode per_minute --config @job-config.json --idempotency-key <key>
 zenifra project info --project <project-id>
 zenifra project url --project <project-id>
 zenifra project logs --project <project-id>
@@ -52,6 +54,9 @@ zenifra project autoscaling set --project <project-id> --min 2 --max 8 --cpu 70 
 zenifra project autoscaling disable --project <project-id>
 zenifra project autoscaling events --project <project-id> --direction scale_up --page 1 --limit 10
 zenifra project billing usage --project <project-id> --from 2026-06-01T00:00:00Z --to 2026-06-02T00:00:00Z --page 1 --limit 20 --json
+zenifra project runs --project <project-id> --page 1 --limit 20 --json
+zenifra project runs logs --project <project-id> --run <run-id>
+zenifra project runs cancel --project <project-id> --run <run-id>
 zenifra project instances --project <project-id>
 zenifra project instances set --project <project-id> --count <n>
 zenifra builds --project <project-id>
@@ -63,7 +68,9 @@ zenifra deploy watch --project <project-id> --build <build-id>
 
 Use `zenifra project logs` para logs da aplicacao rodando e `zenifra builds logs` para logs do build GitHub. `zenifra deploy` retorna um `build_id`, e `zenifra deploy watch` usa esse `build_id` para acompanhar status e logs incrementais em tempo real ate o fim do build.
 
-Antes de uma mutacao, confirme o perfil, a API e a organizacao ativa. Em seguida, confirme o plano, o pagamento, o tipo de projeto, o dominio e o metodo de deploy. Depois da chamada, leia o estado final, a URL e o build/deployment; uma resposta aceita nao prova que o projeto esta pronto.
+Antes de uma mutacao, confirme o perfil, a API e a organizacao ativa. Em seguida, confirme o plano, o pagamento, o tipo de projeto e os campos aplicaveis. Depois da chamada, leia o estado final; para HTTP, confira tambem a URL e o build/deployment. Uma resposta aceita nao prova que o projeto esta pronto.
+
+Jobs agendados usam planos `job-*`, cobranca `per_minute`, uma imagem OCI pronta e cron de cinco campos em UTC. Eles nao possuem URL publica, porta, exposicao ou instancias. Depois da criacao, confira as informacoes do projeto e acompanhe `project runs`; quando houver permissao, leia os logs da execucao com `project runs logs`. Cancele uma execucao ativa com `project runs cancel` somente dentro do escopo autorizado. O CLI atual nao oferece comando para alterar o cron; nao invente um comando ou endpoint para isso.
 
 Para dominios personalizados, mantenha o dominio principal separado e aguarde DNS/TLS antes de concluir. Para MCP, use a URL completa terminada em `/mcp`, confira a descoberta do recurso e aceite `401` como o desafio esperado antes do OAuth.
 

@@ -27,9 +27,9 @@ Before any production mutation, make the target explicit:
 2. For a user-login profile, run `zenifra orgs --json` and select the organization with `zenifra org set --org <id>` or pass `--org <id>` for one command. An OAuth grant belongs to the account; it does not change organization membership.
 3. Read the current plan catalog with `zenifra plans` and confirm the project type, plan, payment mode, storage, exposure, deploy source, port, instances, and initial environments.
 4. Use an idempotency key for project creation and Valkey credential rotation. If a request times out, inspect the resulting project or operation before retrying with the same key.
-5. After the mutation, read the project URL and status, then follow the build or deployment identifier until it reaches a terminal state.
+5. After the mutation, read the project status. For HTTP projects, also read the URL and follow the build or deployment identifier until it reaches a terminal state. For Scheduled Jobs, follow the run history instead.
 
-Treat a project as ready only after the public URL, DNS/TLS, and the product health or OAuth behavior expected for that project have been checked. A created project or successful API response alone is not readiness.
+Treat an HTTP project as ready only after the public URL, DNS/TLS, and the product health or OAuth behavior expected for that project have been checked. A Scheduled Job has no public URL: treat it as ready only after project information confirms the expected Job configuration and a scheduled run reaches a terminal state; read that run's logs when permission allows. A created project or successful API response alone is not readiness.
 
 ## Domains and MCP OAuth
 
@@ -92,6 +92,15 @@ zenifra projects --org <another-organization-id>
 - `valkey credentials rotate` returns an asynchronous operation. Use `--wait` or the returned operation identifier with `valkey credentials status`, and save a newly returned connection value only in a secure local destination.
 - `zenifra valkey connection` remains masked by design. A usable connection from a completed rotation may be written with an explicit private `--connection-file <path>`; the file preserves the exact connection string returned by the backend. Never paste it into chat, commit it, or place it in a public example. If a consuming client requires `rediss://` instead of a backend-returned `valkeys://`, adapt the value only in that client's private configuration, keeping the host, port, credentials, and parameters unchanged; never alter the CLI output or the saved backend value.
 
+## Scheduled Jobs guidance
+
+- Read only the Jobs catalog with `zenifra plans --type job [--json]`. Job plan IDs use the `job-` prefix, `payment_mode` is `per_minute`, and JSON monetary values such as `price_per_minute` and run `amount` are expressed in BRL cents and may be fractional. The default `zenifra plans` output can still show the other catalogs when Scheduled Jobs is explicitly unavailable; an explicit `--type job` request must report that unavailability.
+- The CLI V1 creates Scheduled Jobs from a ready OCI image. Confirm the `job-*` plan, `per_minute` billing, image reference and access, five-field UTC cron, storage, and initial environment variables. Jobs do not use a public URL, port, exposure, or instances, and the CLI does not ask for a GitHub source, command, or arguments.
+- Use `zenifra create project --name <name> --plan <job-plan> --payment-mode per_minute --config @<job-config.json> --idempotency-key <key>` or the interactive wizard. A Job config uses `type_project: job`, an OCI `image`, `job.cron`, `storage`, and optional `envs`.
+- List run history with `zenifra project runs --project <project-id> [--page <n>] [--limit <n>] [--json]`. Follow pagination and preserve unknown duration, billed minutes, or amount as unknown rather than zero.
+- Read one run's logs with `zenifra project runs logs --project <project-id> --run <run-id> [--json]`. Cancel an active run only with explicit authorization and the `project.job-run.cancel` permission by using `zenifra project runs cancel --project <project-id> --run <run-id> [--json]`.
+- The CLI does not currently expose a schedule-update command. Say so instead of inventing one or calling an undocumented endpoint.
+
 ## Output and asynchronous operations
 
 - Human output is for direct inspection. `--json` preserves the public response for ordinary commands; do not parse table columns as an API contract.
@@ -138,13 +147,16 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Edit a profile: `zenifra profile edit staging --description "Homologacao interna"`
 - Remove a non-active profile: `zenifra profile remove staging`
 - Select organization for a user-login profile: `zenifra org set`
-- Compare public plan prices: `zenifra plans`, `zenifra plans --type http`, `zenifra plans --type storage --json`
+- Compare public plan prices: `zenifra plans`, `zenifra plans --type http`, `zenifra plans --type storage --json`, `zenifra plans --type job --json`
 - List projects: `zenifra projects --type http --page 1 --limit 15`
 - Create a project from flags: `zenifra create project --name <name> --plan free --payment-mode hourly --config @project.json`
 - Run the interactive project wizard: `zenifra create project`
 - Read hourly consumption and compute/storage costs: `zenifra project billing usage --project <project-id> [--from <ISO>] [--to <ISO>] [--page <n>] [--limit <n>] [--json]`
 - Read Valkey status and masked connection data: `zenifra valkey status --project <project-id>` and `zenifra valkey connection --project <project-id>`
 - Rotate a Valkey credential and follow the operation: `zenifra valkey credentials rotate --project <project-id> [--wait]` or `zenifra valkey credentials status --project <project-id> --operation <operation-id>`
+- List Scheduled Job runs: `zenifra project runs --project <project-id> [--page <n>] [--limit <n>] [--json]`
+- Read Scheduled Job run logs: `zenifra project runs logs --project <project-id> --run <run-id> [--json]`
+- Cancel an authorized active Scheduled Job run: `zenifra project runs cancel --project <project-id> --run <run-id> [--json]`
 - Get project info or URL: `zenifra project info --project <project-id>` or `zenifra project url --project <project-id>`
 - Read runtime logs: `zenifra project logs --project <project-id> [--instance <instance-id>]`
 - Read GitHub build logs: `zenifra builds logs --project <project-id> --build <build-id> [--follow]`
@@ -167,6 +179,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - PostgreSQL: `zenifra create project --name app-postgres --plan db-basic --payment-mode monthly --config @examples/postgresql-project.json`
 - MariaDB: `zenifra create project --name app-mariadb --plan db-basic --payment-mode monthly --config @examples/mariadb-project.json`
 - HTTP with autoscaling: `zenifra create project --name app-http-autoscaling --plan premium --payment-mode hourly --config @examples/http-autoscaling-project.json`
+- Scheduled Job from a ready OCI image: `zenifra create project --name nightly-report --plan job-basic --payment-mode per_minute --config @job-config.json --idempotency-key <key>`
 - When the user prefers prompts instead of JSON, run `zenifra create project` and use the wizard.
 - Treat these examples as starting points, not as permission to assume production values.
 
@@ -219,6 +232,12 @@ node zenifra-cli/bin/zenifra.mjs <command>
   - plan
   - version
   - storage
+- For Scheduled Jobs, confirm at least:
+  - a `job-*` plan and `per_minute` billing
+  - a ready OCI image and whether it requires authentication
+  - a five-field cron expression interpreted in UTC
+  - storage and initial envs
+  - that no public URL, port, exposure, or instances are expected
 - If the agent is not confident about plan choice, deploy strategy, storage, envs, or any other create-time field that can affect cost or production behavior, ask the user before creating the project.
 - If the user has not explicitly confirmed those inputs, prefer asking over inferring.
 
@@ -238,6 +257,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Prefer `--json` when another tool or script will consume the result.
 - `zenifra deploy` returns a `build_id`; use it with `zenifra deploy watch --project <project-id> --build <build-id>` to follow the build until completion.
 - `zenifra project logs` is for runtime logs. `zenifra builds logs` is for GitHub build logs.
+- Scheduled Job logs belong to a public run ID and use `zenifra project runs logs`; do not use `project logs` or build-log commands for them.
 - `zenifra deploy watch` now streams incremental build logs until the build reaches a terminal status.
 - When a required argument is missing in commands like `zenifra deploy`, `zenifra deploy watch`, `zenifra builds`, or common `project` subcommands, the CLI now prints the command-specific help instead of only a terse validation error.
 - `zenifra projects create` was removed; if you see it in old notes, use `zenifra create project` instead.
