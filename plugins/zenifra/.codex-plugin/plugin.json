@@ -1,6 +1,6 @@
 {
   "name": "zenifra",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Manage Zenifra projects and deployments from Codex and the terminal.",
   "author": {
     "name": "Zenifra"
