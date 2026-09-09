@@ -67,7 +67,7 @@ Antes de uma mutacao, confirme o perfil, a API e a organizacao ativa. Em seguida
 
 Para dominios personalizados, mantenha o dominio principal separado e aguarde DNS/TLS antes de concluir. Para MCP, use a URL completa terminada em `/mcp`, confira a descoberta do recurso e aceite `401` como o desafio esperado antes do OAuth.
 
-O servidor MCP publica tools como `get_context`, `list_projects` e `list_ai_keys`. Alguns clientes exibem o nome do servidor como prefixo; com o servidor `zenifra`, `get_context` pode aparecer como `zenifra_get_context`. Nao adicione novamente o namespace do servidor a uma tool que ja o contenha.
+O servidor MCP publica tools como `get_context`, `list_projects`, `get_project_logs`, `get_build_logs`, `get_project_network`, `get_project_health`, `get_project_autoscaling`, `get_valkey_status` e `list_ai_keys`. Alguns clientes exibem o nome do servidor como prefixo; com o servidor `zenifra`, `get_context` pode aparecer como `zenifra_get_context`. Nao adicione novamente o namespace do servidor a uma tool que ja o contenha. Consulte primeiro o contexto e o tipo do projeto; liste instancias antes de filtrar metricas ou logs, e liste builds antes de pedir os logs de um build.
 
 Conexoes Valkey permanecem mascaradas. Quando uma rotacao concluida devolver uma conexao utilizavel, use `--connection-file <path>` em um destino privado; o arquivo preserva exatamente a string retornada pelo backend. Nao inclua a conexao em mensagens, logs ou commits.
 
