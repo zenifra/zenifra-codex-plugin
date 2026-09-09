@@ -1,6 +1,6 @@
 {
   "name": "zenifra",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Manage Zenifra projects and deployments from Codex and the terminal.",
   "author": {
     "name": "Zenifra"
@@ -18,8 +18,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Zenifra",
-    "shortDescription": "List projects and trigger Zenifra deployments.",
-    "longDescription": "Use Zenifra from Codex to authenticate, select an organization, list projects, create projects, trigger GitHub deployments, and watch build status.",
+    "shortDescription": "Manage and inspect Zenifra projects.",
+    "longDescription": "Use Zenifra from Codex to authenticate, select an organization, manage projects and deployments, and inspect builds, logs, health, metrics, and usage.",
     "developerName": "Zenifra",
     "category": "Productivity",
     "capabilities": [
@@ -30,7 +30,8 @@
     "defaultPrompt": [
       "List my Zenifra projects.",
       "Deploy a Zenifra project.",
-      "Show my latest Zenifra builds."
+      "Show my latest Zenifra builds.",
+      "Check my Zenifra project health and logs."
     ],
     "brandColor": "#0F766E"
   }

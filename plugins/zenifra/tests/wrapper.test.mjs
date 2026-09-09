@@ -99,6 +99,11 @@ test('documents raw MCP tool names without repeating the server namespace', asyn
 
   assert.match(publicDocs, /get_context/);
   assert.match(publicDocs, /list_ai_keys/);
+  assert.match(publicDocs, /get_project_logs/);
+  assert.match(publicDocs, /get_build_logs/);
+  assert.match(publicDocs, /get_project_network/);
+  assert.match(publicDocs, /get_valkey_status/);
+  assert.match(publicDocs, /list_project_instances.*before|liste instancias antes/i);
   assert.match(publicDocs, /server.*tool|tool.*server/i);
   assert.doesNotMatch(publicDocs, /zenifra_zenifra_/);
 });
