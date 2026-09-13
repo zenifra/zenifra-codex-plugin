@@ -30,6 +30,7 @@ Depois disso, use:
 
 ```bash
 zenifra auth login --oauth
+zenifra whoami --json
 zenifra help project logs
 zenifra auth login --code 123456
 zenifra auth logout --revoke
@@ -39,6 +40,9 @@ zenifra projects --type http --page 1 --limit 15
 zenifra create project --name app-http-autoscaling --plan premium --payment-mode hourly --config @examples/http-autoscaling-project.json
 zenifra project info --project <project-id>
 zenifra project url --project <project-id>
+zenifra project stop --project <project-id>
+zenifra project resume --project <project-id>
+zenifra project delete --project <project-id> --yes
 zenifra project logs --project <project-id>
 zenifra project metrics --project <project-id>
 zenifra project network --project <project-id> --view summary
@@ -59,11 +63,18 @@ zenifra builds logs --project <project-id> --build <build-id>
 zenifra builds logs --project <project-id> --build <build-id> --follow
 zenifra deploy --project <project-id> --branch main
 zenifra deploy watch --project <project-id> --build <build-id>
+zenifra deployments --project <project-id>
 ```
 
-Use `zenifra project logs` para logs da aplicacao rodando e `zenifra builds logs` para logs do build GitHub. `zenifra deploy` retorna um `build_id`, e `zenifra deploy watch` usa esse `build_id` para acompanhar status e logs incrementais em tempo real ate o fim do build.
+Use `zenifra project logs` para logs da aplicacao rodando e `zenifra builds logs` para logs do build GitHub. `zenifra deploy` retorna um `build_id`, e `zenifra deploy watch` usa esse `build_id` para acompanhar status e logs incrementais em tempo real ate o fim do build. Nos logs de build, `event` identifica um evento detalhado e `summary` identifica o resumo terminal de compatibilidade, que pode ter apenas uma linha.
 
-Antes de uma mutacao, confirme o perfil, a API e a organizacao ativa. Em seguida, confirme o plano, o pagamento, o tipo de projeto, o dominio e o metodo de deploy. Depois da chamada, leia o estado final, a URL e o build/deployment; uma resposta aceita nao prova que o projeto esta pronto.
+Antes de uma mutacao, use `zenifra whoami --json` para conferir o perfil efetivo, a API, o modo de autenticacao e a organizacao ativa sem exibir credenciais. Em seguida, confirme o plano, o pagamento, o tipo de projeto, o dominio e o metodo de deploy. Depois da chamada, leia o estado final, a URL e o build/deployment; uma resposta aceita nao prova que o projeto esta pronto.
+
+O catalogo humano de planos mostra as capacidades anunciadas. Para automacao, `zenifra plans --json` preserva a resposta publica; confira campos como `capabilities.logs`, `capabilities.metrics` e `capabilities.healthcheck` em vez de deduzir acesso pelo preco ou pela descricao do plano.
+
+Use `zenifra project stop --project <project-id>` e `zenifra project resume --project <project-id>` para controlar o estado do projeto. A exclusao exige autorizacao explicita e o comando `zenifra project delete --project <project-id> --yes`; sem `--yes`, a CLI nao envia a solicitacao de remocao. Leia o projeto antes e valide o estado final depois.
+
+Projetos criados por imagem OCI passam a ter um historico inicial de deployment. Consulte-o com `zenifra deployments --project <project-id>` e continue distinguindo projeto criado, build concluido, deployment concluido e aplicacao pronta.
 
 Para dominios personalizados, mantenha o dominio principal separado e aguarde DNS/TLS antes de concluir. Para MCP, use a URL completa terminada em `/mcp`, confira a descoberta do recurso e aceite `401` como o desafio esperado antes do OAuth.
 
@@ -95,7 +106,7 @@ zenifra create project
 
 Com apenas uma organizacao disponivel, o CLI a seleciona automaticamente quando necessario. Para usar outra apenas em um comando, passe `--org <organization-id>`. Um novo login OAuth limpa a selecao anterior desse perfil.
 
-O consentimento exige leitura e permite aprovar escrita explicitamente. Use `--read-only` para solicitar somente leitura e `--no-browser` para abrir o endereco manualmente na mesma maquina. As permissoes atuais do usuario em cada organizacao continuam valendo; OAuth nao concede novos cargos ou acessos.
+O consentimento exige leitura e permite aprovar escrita explicitamente. Use `--read-only` para solicitar somente leitura. `--no-browser` imprime o endereco, mas o navegador precisa estar na mesma maquina da CLI ou conseguir alcancar o callback temporario de loopback dessa maquina. Em um servidor remoto onde isso nao e possivel, use uma API key da organizacao ou conclua o login em uma maquina onde o callback seja alcancavel. As permissoes atuais do usuario em cada organizacao continuam valendo; OAuth nao concede novos cargos ou acessos.
 
 A renovacao da sessao e automatica. Cada perfil OAuth pertence a uma API: use perfis separados para ambientes diferentes. `ZENIFRA_API_KEY` continua tendo prioridade e o CLI avisa quando ela substitui a autenticacao OAuth. A confirmacao final de login aparece no terminal.
 
