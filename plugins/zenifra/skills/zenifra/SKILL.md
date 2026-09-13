@@ -34,7 +34,7 @@ Treat a project as ready only after the public URL, DNS/TLS, and the product hea
 ## Project lifecycle
 
 - Stop a project with `zenifra project stop --project <project-id>` and resume it with `zenifra project resume --project <project-id>`. Both commands confirm the resulting state; read the project again when the final state matters to a later action.
-- Delete a project only after explicit user authorization, an exact project read, and a review of the target. Use `zenifra project delete --project <project-id> --yes`; without `--yes`, the CLI does not send a removal request. Verify the final absence or deleted state through the supported read behavior before reporting completion.
+- Delete a project only after an exact project read and an informed, target-specific confirmation. Immediately before deletion, tell the user exactly what will be deleted by showing the project name, project ID, project type, selected organization, and effective API base; include the public URL when one exists, and state that project deletion is destructive. Ask for an explicit and unambiguous affirmative response for that exact target. Earlier generic authorization does not count, even when the user previously allowed other mutations or deployments. Only after receiving this confirmation may you add `--yes` and run `zenifra project delete --project <project-id> --yes`. Without `--yes`, the CLI does not send a removal request. Verify the final absence or deleted state through the supported read behavior before reporting completion.
 - If a lifecycle request times out or is interrupted, inspect the project before retrying. Do not assume either success or failure from the local timeout alone.
 
 ## Domains and MCP OAuth

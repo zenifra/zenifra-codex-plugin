@@ -72,7 +72,7 @@ Antes de uma mutacao, use `zenifra whoami --json` para conferir o perfil efetivo
 
 O catalogo humano de planos mostra as capacidades anunciadas. Para automacao, `zenifra plans --json` preserva a resposta publica; confira campos como `capabilities.logs`, `capabilities.metrics` e `capabilities.healthcheck` em vez de deduzir acesso pelo preco ou pela descricao do plano.
 
-Use `zenifra project stop --project <project-id>` e `zenifra project resume --project <project-id>` para controlar o estado do projeto. A exclusao exige autorizacao explicita e o comando `zenifra project delete --project <project-id> --yes`; sem `--yes`, a CLI nao envia a solicitacao de remocao. Leia o projeto antes e valide o estado final depois.
+Use `zenifra project stop --project <project-id>` e `zenifra project resume --project <project-id>` para controlar o estado do projeto. Para excluir, leia primeiro o projeto e, imediatamente antes da remocao, mostre expressamente ao usuario o nome, ID, tipo, organizacao selecionada, API efetiva e URL publica quando existir. Informe que a exclusao do projeto e destrutiva e solicite uma resposta afirmativa, explicita e inequivoca para aquele alvo. Uma autorizacao generica anterior nao vale como confirmacao. Somente depois dessa resposta use `zenifra project delete --project <project-id> --yes`; sem `--yes`, a CLI nao envia a solicitacao de remocao. Valide o estado final depois.
 
 Projetos criados por imagem OCI passam a ter um historico inicial de deployment. Consulte-o com `zenifra deployments --project <project-id>` e continue distinguindo projeto criado, build concluido, deployment concluido e aplicacao pronta.
 
