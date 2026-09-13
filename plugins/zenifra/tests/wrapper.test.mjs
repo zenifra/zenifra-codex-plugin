@@ -128,6 +128,23 @@ test('documents the current CLI identity, lifecycle, plan, and build-log contrac
   assert.match(publicDocs, /loopback.*same machine|mesma maquina.*loopback/is);
   assert.match(publicDocs, /initial deployment history|historico inicial de deployment/i);
   assert.doesNotMatch(publicDocs, /does not expose a project deletion command/i);
-  assert.equal(manifest.version, '0.2.1');
+  assert.equal(manifest.version, '0.2.2');
+  assert.equal(packageJson.version, manifest.version);
+});
+
+test('requires an informed, target-specific confirmation immediately before project deletion', async () => {
+  const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+  const manifest = JSON.parse(await readFile(new URL('../.codex-plugin/plugin.json', import.meta.url), 'utf8'));
+  const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const publicDocs = `${skill}\n${readme}`;
+
+  assert.match(publicDocs, /project name.*project ID.*project type/is);
+  assert.match(publicDocs, /selected organization.*effective API base/is);
+  assert.match(publicDocs, /immediately before.*delet/is);
+  assert.match(publicDocs, /explicit.*unambiguous.*affirmative/is);
+  assert.match(publicDocs, /earlier.*generic.*authorization.*does not count/is);
+  assert.match(publicDocs, /only after.*confirmation.*--yes/is);
+  assert.equal(manifest.version, '0.2.2');
   assert.equal(packageJson.version, manifest.version);
 });
