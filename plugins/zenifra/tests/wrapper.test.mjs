@@ -71,7 +71,8 @@ test('documents public safety boundaries and CLI automation semantics', async ()
   assert.match(skill, /Never place passwords, TOTP codes, API keys, tokens/);
   assert.match(skill, /idempotency-key/);
   assert.match(skill, /one JSON object per line/);
-  assert.match(skill, /does not expose a project deletion command/);
+  assert.match(skill, /project delete --project <project-id> --yes/);
+  assert.match(skill, /without `--yes`, the CLI does not send a removal request/);
   assert.match(skill, /Do not call private or undocumented API endpoints/);
   assert.match(skill, /read back the final state/);
 });
@@ -106,4 +107,27 @@ test('documents raw MCP tool names without repeating the server namespace', asyn
   assert.match(publicDocs, /list_project_instances.*before|liste instancias antes/i);
   assert.match(publicDocs, /server.*tool|tool.*server/i);
   assert.doesNotMatch(publicDocs, /zenifra_zenifra_/);
+});
+
+test('documents the current CLI identity, lifecycle, plan, and build-log contracts', async () => {
+  const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+  const manifest = JSON.parse(await readFile(new URL('../.codex-plugin/plugin.json', import.meta.url), 'utf8'));
+  const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const publicDocs = `${skill}\n${readme}`;
+
+  assert.match(publicDocs, /zenifra whoami --json/);
+  assert.match(publicDocs, /zenifra project stop --project <project-id>/);
+  assert.match(publicDocs, /zenifra project resume --project <project-id>/);
+  assert.match(publicDocs, /zenifra project delete --project <project-id> --yes/);
+  assert.match(publicDocs, /without `--yes`.*does not send|sem `--yes`.*nao envia/is);
+  assert.match(publicDocs, /capabilities\.logs/);
+  assert.match(publicDocs, /capabilities\.metrics/);
+  assert.match(publicDocs, /capabilities\.healthcheck/);
+  assert.match(publicDocs, /`event`.*`summary`|`summary`.*`event`/is);
+  assert.match(publicDocs, /loopback.*same machine|mesma maquina.*loopback/is);
+  assert.match(publicDocs, /initial deployment history|historico inicial de deployment/i);
+  assert.doesNotMatch(publicDocs, /does not expose a project deletion command/i);
+  assert.equal(manifest.version, '0.2.1');
+  assert.equal(packageJson.version, manifest.version);
 });

@@ -13,23 +13,29 @@ This skill lives in a public repository and is limited to the public `zenifra-cl
 
 ## Safe operation rules
 
-- Treat read-only commands and mutating commands differently. Listing, plan catalogs, project info, URLs, logs, metrics, capabilities, builds, deployments, billing usage, Valkey status, and profile inspection are read-oriented; create, deploy, image, exposure, environment, instance, autoscaling, credential rotation, logout with `--revoke`, and profile changes have side effects.
+- Treat read-only commands and mutating commands differently. Listing, plan catalogs, project info, URLs, logs, metrics, capabilities, builds, deployments, billing usage, Valkey status, identity, and profile inspection are read-oriented; create, deploy, stop, resume, delete, image, exposure, environment, instance, autoscaling, credential rotation, logout with `--revoke`, and profile changes have side effects.
 - Before a mutation, verify the exact profile, API base, organization, project, branch or commit, and intended values. Production mutations require explicit user scope; never infer them from a name such as `prod`.
 - Use `--idempotency-key` for project creation and Valkey credential rotation when a retry may happen. Retry only with the same key and only after inspecting the previous response; do not mask authentication, authorization, validation, setup, or cleanup failures with generic retries.
 - After every external mutation, read back the final state. A successful request or an accepted asynchronous operation is not proof that the desired state was reached.
-- When a requested capability is not exposed by the CLI, say so instead of inventing a command or using an undocumented endpoint. The CLI currently does not expose a project deletion command.
+- When a requested capability is not exposed by the CLI, say so instead of inventing a command or using an undocumented endpoint. Project deletion is available as `zenifra project delete --project <project-id> --yes`; without `--yes`, the CLI does not send a removal request. Require explicit authorization and read the exact project first.
 
 ## Mutation workflow
 
 Before any production mutation, make the target explicit:
 
-1. Inspect the active profile with `zenifra profile show --json` and verify the API base.
+1. Run `zenifra whoami --json` to inspect the effective profile, API base, authentication mode, and selected organization without displaying credentials. Use `zenifra profile show --json` when you also need saved profile metadata.
 2. For a user-login profile, run `zenifra orgs --json` and select the organization with `zenifra org set --org <id>` or pass `--org <id>` for one command. An OAuth grant belongs to the account; it does not change organization membership.
-3. Read the current plan catalog with `zenifra plans` and confirm the project type, plan, payment mode, storage, exposure, deploy source, port, instances, and initial environments.
+3. Read the current plan catalog with `zenifra plans` and confirm the project type, plan, payment mode, storage, exposure, deploy source, port, instances, and initial environments. Check the current `capabilities.*` fields instead of inferring availability from price or descriptive features. In particular, use `capabilities.logs`, `capabilities.metrics`, and `capabilities.healthcheck` for those product capabilities. `--json` preserves the public catalog response for automation.
 4. Use an idempotency key for project creation and Valkey credential rotation. If a request times out, inspect the resulting project or operation before retrying with the same key.
 5. After the mutation, read the project URL and status, then follow the build or deployment identifier until it reaches a terminal state.
 
 Treat a project as ready only after the public URL, DNS/TLS, and the product health or OAuth behavior expected for that project have been checked. A created project or successful API response alone is not readiness.
+
+## Project lifecycle
+
+- Stop a project with `zenifra project stop --project <project-id>` and resume it with `zenifra project resume --project <project-id>`. Both commands confirm the resulting state; read the project again when the final state matters to a later action.
+- Delete a project only after explicit user authorization, an exact project read, and a review of the target. Use `zenifra project delete --project <project-id> --yes`; without `--yes`, the CLI does not send a removal request. Verify the final absence or deleted state through the supported read behavior before reporting completion.
+- If a lifecycle request times out or is interrupted, inspect the project before retrying. Do not assume either success or failure from the local timeout alone.
 
 ## Domains and MCP OAuth
 
@@ -79,7 +85,7 @@ zenifra projects --org <another-organization-id>
 ```
 
 - Without an explicit API base, the CLI uses its profile/override configuration and otherwise defaults to production. Use an explicit environment for tests; do not assume a profile name selects an API.
-- `--no-browser` prints the authorization URL to open manually on the same machine. The callback uses a temporary local loopback port. The browser page acknowledges receipt; the terminal confirms that the login was completed and saved. `Ctrl+C` cancels the pending login.
+- `--no-browser` prints the authorization URL to open manually. The browser must run on the same machine as the CLI, or otherwise be able to reach that machine's temporary loopback callback. On a remote or headless server where the browser cannot reach that loopback address, use an organization API key or complete the login on a machine where the callback is reachable. The browser page acknowledges receipt; the terminal confirms that the login was completed and saved. `Ctrl+C` cancels the pending login.
 - Tokens are stored in the private local profile and renewed automatically before expiry. Concurrent commands coordinate refresh; do not manually edit or expose tokens. If renewal is rejected, sign in again. Mutations are not automatically replayed.
 - OAuth profiles are bound to their API. Changing `--api-base` or `ZENIFRA_API_URL` does not authorize forwarding that profile's token to another API; use another profile and login for that environment.
 - `ZENIFRA_API_KEY` still takes precedence for a command and produces a warning when replacing an OAuth profile credential. Check this precedence when diagnosing unexpected authorization behavior without printing the key.
@@ -100,6 +106,7 @@ zenifra projects --org <another-organization-id>
 
 - Human output is for direct inspection. `--json` preserves the public response for ordinary commands; do not parse table columns as an API contract.
 - `deploy watch --json` emits one JSON object per line while streaming build events, not one final JSON document. `builds logs --follow` similarly streams incremental output.
+- Build log entries expose their source. `event` identifies a detailed build event; `summary` is the terminal summary fallback for older builds and may contain only one line. Preserve that distinction and do not report a summary as missing logs or invent unavailable build steps.
 - Project creation, deployment, and credential rotation may be asynchronous. Capture the returned identifier, poll with the supported command, and report the terminal state or the actual blocker.
 - Environment values and credentials are masked by default. Never use `--show-values` unless the user explicitly requires it, and never include the revealed value in a report.
 
@@ -128,6 +135,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 
 - Command-specific help: `zenifra help <command>` or `zenifra <command> --help`
 - Command group help: `zenifra auth`, `zenifra profile`, `zenifra project`, `zenifra org`
+- Inspect effective identity and target without credentials: `zenifra whoami --json`
 - Browser login on the active profile: `zenifra auth login --oauth`
 - Password login on the active profile: `zenifra auth login`
 - Browser login on an explicit environment/profile: `zenifra auth login --oauth --profile staging --api-base https://api.example.test/v1`
@@ -150,6 +158,8 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Read Valkey status and masked connection data: `zenifra valkey status --project <project-id>` and `zenifra valkey connection --project <project-id>`
 - Rotate a Valkey credential and follow the operation: `zenifra valkey credentials rotate --project <project-id> [--wait]` or `zenifra valkey credentials status --project <project-id> --operation <operation-id>`
 - Get project info or URL: `zenifra project info --project <project-id>` or `zenifra project url --project <project-id>`
+- Stop or resume a project: `zenifra project stop --project <project-id>` and `zenifra project resume --project <project-id>`
+- Delete an explicitly authorized project: `zenifra project delete --project <project-id> --yes`
 - Read runtime logs: `zenifra project logs --project <project-id> [--instance <instance-id>]`
 - Read GitHub build logs: `zenifra builds logs --project <project-id> --build <build-id> [--follow]`
 - Read CPU, memory, and network metrics: `zenifra project metrics --project <project-id> [--instance <instance-id>]`
@@ -162,7 +172,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Trigger GitHub deploy and receive a `build_id`: `zenifra deploy --project <project-id> --branch main`
 - Watch that build with live logs: `zenifra deploy watch --project <project-id> --build <build-id>`
 - List builds: `zenifra builds --project <project-id>`
-- List deployments/builds: `zenifra deployments --project <project-id>`
+- List deployments/builds: `zenifra deployments --project <project-id>`. OCI-created projects include their initial deployment history.
 
 ## Create Examples
 
@@ -177,7 +187,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 ## Before Creating Projects
 
 - Project creation can generate cost for the customer. Do not guess values that affect billing or infrastructure shape.
-- Before suggesting a plan or comparing cost, prefer running `zenifra plans` so the user sees the current HTTP, database, and storage catalogs. The `db-free` plan supports PostgreSQL and Valkey Key Value, not MariaDB.
+- Before suggesting a plan or comparing cost, prefer running `zenifra plans` so the user sees the current HTTP, database, and storage catalogs. Use the current `capabilities.*` fields to decide whether a plan includes logs, metrics, health checks, autoscaling, or another advertised capability. The `db-free` plan supports PostgreSQL and Valkey Key Value, not MariaDB.
 - Before running `zenifra create project`, confirm the minimum required inputs with the user.
 - Always confirm:
   - `type_project`
@@ -231,6 +241,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - The CLI stores profile data under `~/.config/zenifra-cli/profiles.json`.
 - If an old `session.json` exists and `profiles.json` does not, the CLI migrates it automatically into the `default` profile and removes the legacy file.
 - The active profile is the local source of truth for `apiBaseUrl`, description, and saved credential.
+- `zenifra whoami --json` resolves command overrides and profile state to show the effective profile, API base, authentication mode, and selected organization without exposing credentials.
 - Profile credentials can be an organization API key, password-login token or OAuth session with automatic renewal. `selectedOrganizationId` applies to password-login and OAuth profiles.
 - `ZENIFRA_API_KEY` overrides the active profile credential for the current command only.
 - `ZENIFRA_API_URL` overrides the active profile API base for the current command only.
@@ -238,11 +249,14 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - The CLI sends `Authorization: Bearer <token>` and `x-organization-id` only when needed.
 - Logout and remote revocation depend on the profile authentication mode; follow the OAuth login section above.
 - `zenifra plans` is a public read-only command and works without authentication.
+- Human plan output includes advertised capabilities; `zenifra plans --json` preserves the public catalog contract, including `capabilities.*` fields.
 - `zenifra projects` is paginated; default to `--page 1 --limit 15` and request additional pages only when needed.
 - Prefer `--json` when another tool or script will consume the result.
 - `zenifra deploy` returns a `build_id`; use it with `zenifra deploy watch --project <project-id> --build <build-id>` to follow the build until completion.
 - `zenifra project logs` is for runtime logs. `zenifra builds logs` is for GitHub build logs.
+- Build log `source: "event"` entries are detailed events; `source: "summary"` is a legacy terminal fallback and may be a single line.
 - `zenifra deploy watch` now streams incremental build logs until the build reaches a terminal status.
+- OCI project creation records an initial deployment, so use `zenifra deployments --project <project-id>` to inspect its initial deployment history as well as later deployments.
 - When a required argument is missing in commands like `zenifra deploy`, `zenifra deploy watch`, `zenifra builds`, or common `project` subcommands, the CLI now prints the command-specific help instead of only a terse validation error.
 - `zenifra projects create` was removed; if you see it in old notes, use `zenifra create project` instead.
 - Running `zenifra create project` without flags opens the interactive wizard.
