@@ -126,6 +126,80 @@ test('documents product-level mutation preflight and safe MCP/Valkey verificatio
   assert.match(publicDocs, /rediss:\/\//);
 });
 
+test('documents the Scheduled Jobs CLI boundary and billing-cycle contract in each public surface', async () => {
+  const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+  const sectionBetween = (content, startMarker, endMarker) => {
+    const start = content.indexOf(startMarker);
+    const end = content.indexOf(endMarker, start + startMarker.length);
+    assert.notEqual(start, -1, `missing Scheduled Jobs section: ${startMarker}`);
+    assert.notEqual(end, -1, `missing end marker for Scheduled Jobs section: ${endMarker}`);
+    return content.slice(start, end);
+  };
+  const surfaces = [
+    {
+      name: 'README.md',
+      content: sectionBetween(readme, 'Jobs agendados', 'Para dominios personalizados'),
+      advancedApi: /nao use `config\.github`, `job\.command` ou `job\.args` no CLI V1.*API avancada documentada/i,
+      unavailable: /capacidade estiver indisponivel.*nao invente uma rota.*403.*capacidade existe/i,
+      envs: /config\.envs.*e obrigatorio.*envs: \[\].*sem omitir o campo/i,
+      nonZero: /qualquer codigo nao zero, inclusive `1`/i,
+    },
+    {
+      name: 'SKILL.md',
+      content: sectionBetween(skill, '## Scheduled Jobs guidance', '## Output and asynchronous operations'),
+      advancedApi: /does not support `config\.github`, `job\.command`, or `job\.args`; use the documented advanced API/i,
+      unavailable: /capability is unavailable.*do not invent a route.*403.*capability exists/i,
+      envs: /required `envs` array.*Use `envs: \[\]`.*do not omit `envs`/i,
+      catalogUnavailable: /explicit `--type job` request must report that Scheduled Jobs is unavailable; the API response uses code `SCHEDULED_JOBS_UNAVAILABLE`/i,
+      nonZero: /any non-zero code, including `1`/i,
+    },
+  ];
+
+  for (const surface of surfaces) {
+    const { name, content } = surface;
+    assert.match(content, /zenifra plans --type job/, `${name}: missing Jobs catalog command`);
+    assert.match(content, /project runs --project <project-id>/, `${name}: missing runs command`);
+    assert.match(content, /project runs logs --project <project-id> --run <run-id>/, `${name}: missing logs command`);
+    assert.match(content, /project runs cancel --project <project-id> --run <run-id>/, `${name}: missing cancel command`);
+    assert.match(content, /config\.image/, `${name}: missing image-only CLI boundary`);
+    assert.match(content, /config\.github/, `${name}: missing advanced API source boundary`);
+    assert.match(content, /job\.command/, `${name}: missing advanced API command boundary`);
+    assert.match(content, /job\.args/, `${name}: missing advanced API args boundary`);
+    assert.match(content, surface.advancedApi, `${name}: advanced API boundary is not explicit`);
+    assert.match(content, surface.envs, `${name}: config.envs must be an explicit array, including an empty array when unused`);
+    assert.doesNotMatch(content, /optional `?envs`?/i, `${name}: config.envs must not be documented as optional`);
+    assert.doesNotMatch(content, /default `?zenifra plans`?.{0,100}(?:can still show|pode(?:m)? continuar mostrando).{0,100}(?:other catalogs|outros cat[aá]logos)/i, `${name}: unsupported default catalog fallback claim`);
+    if (name === 'SKILL.md') {
+      assert.match(content, surface.catalogUnavailable, `${name}: explicit Jobs catalog unavailability contract is missing`);
+      assert.doesNotMatch(content, /(?:CLI|user-visible output)[^\n]*(?:prints?|outputs?|reports?)\s+[`"]?SCHEDULED_JOBS_UNAVAILABLE/i, `${name}: API unavailability code must not be documented as literal CLI output`);
+    }
+    assert.match(content, /billed_minutes/, `${name}: missing billed minutes`);
+    assert.match(content, /minimum of 1.*maximum of 60|m[ií]nimo de 1.*m[aá]ximo de 60/i, `${name}: missing minute bounds`);
+    assert.match(content, /HALF_UP/, `${name}: missing rounding rule`);
+    assert.match(content, /one decimal cent|uma casa decimal de centavo/i, `${name}: missing precise rounding unit`);
+    assert.match(content, /R\$ ?0[.,]001/, `${name}: missing one-decimal-cent example`);
+    assert.match(content, /stored amounts|persisted amounts|valores armazenados|valores persistidos/i, `${name}: missing persisted amounts`);
+    assert.match(content, /current billing[- ]cycle|ciclo de cobranca|ciclo de cobrança/i, `${name}: missing cycle boundary`);
+    assert.match(content, /GET \/v1\/project\/:id\/job-runs\/cost-summary/, `${name}: missing cost-summary API`);
+    assert.match(content, /project\.billing\.read/, `${name}: missing billing permission`);
+    assert.match(content, /project\.logs\.read/, `${name}: missing logs permission`);
+    assert.match(content, /project\.metrics\.read/, `${name}: missing metrics permission`);
+    assert.match(content, surface.unavailable, `${name}: missing unavailable-vs-403 distinction`);
+    assert.match(content, /independent(?:ly)? of financial settlement|independentemente d[ae] liquidacao|independentemente d[ae] liquidação/i, `${name}: missing settlement-independent reset`);
+    assert.match(content, /cycle where it started|ciclo em que comecou|ciclo em que começou/i, `${name}: missing start-time attribution`);
+    assert.match(content, /no more than three decimal places|no maximo tres casas decimais|no máximo três casas decimais/i, `${name}: missing display precision`);
+    assert.match(content, /30 seconds|30 segundos/, `${name}: missing cancellation grace`);
+    assert.match(content, /graceful shutdown|encerramento gracioso/i, `${name}: missing graceful cancellation`);
+    assert.match(content, /forced cleanup|limpeza forcada|limpeza forçada/i, `${name}: missing forced cancellation`);
+    assert.match(content, /exit code `?0|codigo de saida `?0|código de saída `?0/i, `${name}: missing success exit status`);
+    assert.match(content, surface.nonZero, `${name}: missing non-zero failure status`);
+    assert.match(content, /does not expose a cost-summary|nao oferece comando de cost-summary|não oferece comando de cost-summary/i, `${name}: invented CLI cost-summary boundary`);
+    assert.doesNotMatch(content, /zenifra[^\n`]*(?:--github|--command|--args)\b/i, `${name}: invented unsupported CLI flag`);
+    assert.doesNotMatch(content, /zenifra\s+(?:cost-summary|schedule-update)\b/i, `${name}: invented unsupported CLI command`);
+  }
+});
+
 test('documents raw MCP tool names without repeating the server namespace', async () => {
   const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
