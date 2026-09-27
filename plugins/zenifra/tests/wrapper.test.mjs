@@ -37,6 +37,36 @@ test('delegates to zenifra on PATH when the monorepo CLI path is unavailable', a
   }
 });
 
+test('passes arguments once to an explicit CLI executable', async () => {
+  const tempRoot = await mkdtemp(join(tmpdir(), 'zenifra-plugin-explicit-cli-'));
+
+  try {
+    const scriptDir = join(tempRoot, 'cache', 'zenifra', '0.1.0', 'scripts');
+    await mkdir(scriptDir, { recursive: true });
+
+    const wrapperPath = join(scriptDir, 'zenifra.mjs');
+    const fakeCliPath = join(tempRoot, 'zenifra-cli.mjs');
+    await copyFile(new URL('../scripts/zenifra.mjs', import.meta.url), wrapperPath);
+    await writeFile(fakeCliPath, '#!/usr/bin/env node\nconsole.log(JSON.stringify(process.argv.slice(2)));\n');
+    await chmod(fakeCliPath, 0o755);
+
+    const args = ['help', 'project', 'github', 'deploy-settings', 'set'];
+    const result = spawnSync(process.execPath, [wrapperPath, ...args], {
+      cwd: tempRoot,
+      env: {
+        ...process.env,
+        ZENIFRA_CLI_BIN: fakeCliPath,
+      },
+      encoding: 'utf8',
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout.trim()), args);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('documents current billing and autoscaling flows without the removed command', async () => {
   const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
@@ -128,7 +158,7 @@ test('documents the current CLI identity, lifecycle, plan, and build-log contrac
   assert.match(publicDocs, /loopback.*same machine|mesma maquina.*loopback/is);
   assert.match(publicDocs, /initial deployment history|historico inicial de deployment/i);
   assert.doesNotMatch(publicDocs, /does not expose a project deletion command/i);
-  assert.equal(manifest.version, '0.2.2');
+  assert.equal(manifest.version, '0.2.3');
   assert.equal(packageJson.version, manifest.version);
 });
 
@@ -145,6 +175,26 @@ test('requires an informed, target-specific confirmation immediately before proj
   assert.match(publicDocs, /explicit.*unambiguous.*affirmative/is);
   assert.match(publicDocs, /earlier.*generic.*authorization.*does not count/is);
   assert.match(publicDocs, /only after.*confirmation.*--yes/is);
-  assert.equal(manifest.version, '0.2.2');
+  assert.equal(manifest.version, '0.2.3');
   assert.equal(packageJson.version, manifest.version);
+});
+
+test('documents GitHub deployment triggers and the release prerelease opt-in', async () => {
+  const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+  const publicDocs = `${skill}\n${readme}`;
+
+  assert.match(publicDocs, /zenifra project github --project <project-id>/);
+  assert.match(publicDocs, /deploy-settings set.*--mode <manual\|branch\|tag\|release>/);
+  assert.match(publicDocs, /--tag-pattern <pattern>/);
+  assert.match(publicDocs, /--include-prereleases <true\|false>/);
+  assert.match(publicDocs, /prereleases are excluded by default|pre-releases are excluded by default/i);
+  assert.match(publicDocs, /only when the user explicitly asks to deploy prereleases|requires an explicit user request/i);
+  assert.match(skill, /initial build from the selected branch/i);
+  assert.match(skill, /when a tag is created.*when a release is published/is);
+  assert.match(skill, /matches the tag name.*exact name.*`\*` and `\?` wildcards.*not a regular expression.*release title/is);
+  assert.match(skill, /without asking for redundant confirmation.*clarify only missing or ambiguous inputs/is);
+  assert.match(publicDocs, /0\.4\.0/);
+  assert.match(publicDocs, /installing the plugin does not install or update the CLI/i);
+  assert.match(publicDocs, /read the settings again to verify|leia.*para conferir o modo efetivo/i);
 });

@@ -58,6 +58,8 @@ zenifra project autoscaling events --project <project-id> --direction scale_up -
 zenifra project billing usage --project <project-id> --from 2026-06-01T00:00:00Z --to 2026-06-02T00:00:00Z --page 1 --limit 20 --json
 zenifra project instances --project <project-id>
 zenifra project instances set --project <project-id> --count <n>
+zenifra project github --project <project-id>
+zenifra project github deploy-settings set --project <project-id> --mode tag --tag-pattern 'v*'
 zenifra builds --project <project-id>
 zenifra builds logs --project <project-id> --build <build-id>
 zenifra builds logs --project <project-id> --build <build-id> --follow
@@ -67,6 +69,28 @@ zenifra deployments --project <project-id>
 ```
 
 Use `zenifra project logs` para logs da aplicacao rodando e `zenifra builds logs` para logs do build GitHub. `zenifra deploy` retorna um `build_id`, e `zenifra deploy watch` usa esse `build_id` para acompanhar status e logs incrementais em tempo real ate o fim do build. Nos logs de build, `event` identifica um evento detalhado e `summary` identifica o resumo terminal de compatibilidade, que pode ter apenas uma linha.
+
+## Deploys GitHub por branch, tag ou release
+
+As configuracoes de deploy automatico por versao exigem uma versao publicada de `@zenifra/cli` 0.4.0 ou superior. Instalar este plugin nao instala nem atualiza o CLI. Antes de configurar, confirme que o CLI instalado oferece `zenifra project github` com `zenifra help project github`.
+
+Leia primeiro o repositorio, a branch e o modo atuais com `zenifra project github --project <project-id>`. A criacao do projeto sempre inicia o build inicial a partir da branch selecionada; o modo escolhido controla os gatilhos dos eventos futuros. O wizard oferece os mesmos quatro modos exclusivos que a configuracao de um projeto existente:
+
+- `manual`: nao inicia builds automaticamente por pushes de branch, tags ou releases. O deploy manual com `zenifra deploy --project <project-id> --branch <branch>` continua disponivel.
+- `branch`: inicia builds automaticamente para pushes na branch configurada; tags e releases nao iniciam builds.
+- `tag`: inicia builds quando uma tag e criada e o nome dela corresponde a `--tag-pattern`.
+- `release`: inicia builds quando uma release e publicada e sua tag corresponde a `--tag-pattern`. Pre-releases ficam excluidas por padrao; incluir pre-releases requer a opcao `--include-prereleases true` e autorizacao explicita do usuario.
+
+Escolha uma unica opcao. `--tag-pattern` e obrigatorio para `tag` e `release` e nao se aplica a `manual` ou `branch`. Ele compara o nome da tag, aceita um nome exato ou os curingas `*` e `?`, e nao e uma regex nem compara o titulo da release. `--include-prereleases` so se aplica a `release` e assume `false` quando omitido. Use o modo e o padrao explicitamente informados pelo usuario sem pedir confirmacao redundante; esclareca somente entradas ausentes ou ambiguas. Incluir pre-releases exige pedido explicito. Antes de alterar um projeto de producao, confirme que o escopo do usuario identifica o perfil, a API efetiva, a organizacao e o projeto. Uma mudanca de modo altera quais eventos futuros do repositorio iniciarao builds.
+
+```bash
+zenifra project github deploy-settings set --project <project-id> --mode manual
+zenifra project github deploy-settings set --project <project-id> --mode branch
+zenifra project github deploy-settings set --project <project-id> --mode tag --tag-pattern 'v*'
+zenifra project github deploy-settings set --project <project-id> --mode release --tag-pattern 'v*' --include-prereleases false
+```
+
+Depois da alteracao, leia `zenifra project github --project <project-id>` para conferir o modo efetivo. A configuracao de um gatilho nao prova que um build ou deploy futuro concluiu; quando um evento correspondente ocorrer, acompanhe o build e confirme o estado final do projeto.
 
 Antes de uma mutacao, use `zenifra whoami --json` para conferir o perfil efetivo, a API, o modo de autenticacao e a organizacao ativa sem exibir credenciais. Em seguida, confirme o plano, o pagamento, o tipo de projeto, o dominio e o metodo de deploy. Depois da chamada, leia o estado final, a URL e o build/deployment; uma resposta aceita nao prova que o projeto esta pronto.
 

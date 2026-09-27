@@ -17,7 +17,7 @@ const repoRootCli = repoRootCliCandidates.find((candidate) => existsSync(candida
 
 const command = explicitCli || (repoRootCli ? process.execPath : 'zenifra');
 const commandArgs = explicitCli
-  ? [explicitCli, ...args]
+  ? args
   : repoRootCli
     ? [repoRootCli, ...args]
     : args;
