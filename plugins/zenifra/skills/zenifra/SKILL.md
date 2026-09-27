@@ -13,7 +13,7 @@ This skill lives in a public repository and is limited to the public `zenifra-cl
 
 ## Safe operation rules
 
-- Treat read-only commands and mutating commands differently. Listing, plan catalogs, project info, URLs, logs, metrics, capabilities, builds, deployments, billing usage, Valkey status, identity, and profile inspection are read-oriented; create, deploy, stop, resume, delete, image, exposure, environment, instance, autoscaling, credential rotation, logout with `--revoke`, and profile changes have side effects.
+- Treat read-only commands and mutating commands differently. Listing, plan catalogs, project info, URLs, logs, metrics, capabilities, builds, deployments, billing usage, Valkey status, identity, profile inspection, and GitHub settings reads are read-oriented; create, deploy, GitHub deployment settings, stop, resume, delete, image, exposure, environment, instance, autoscaling, credential rotation, logout with `--revoke`, and profile changes have side effects.
 - Before a mutation, verify the exact profile, API base, organization, project, branch or commit, and intended values. Production mutations require explicit user scope; never infer them from a name such as `prod`.
 - Use `--idempotency-key` for project creation and Valkey credential rotation when a retry may happen. Retry only with the same key and only after inspecting the previous response; do not mask authentication, authorization, validation, setup, or cleanup failures with generic retries.
 - After every external mutation, read back the final state. A successful request or an accepted asynchronous operation is not proof that the desired state was reached.
@@ -36,6 +36,28 @@ Treat a project as ready only after the public URL, DNS/TLS, and the product hea
 - Stop a project with `zenifra project stop --project <project-id>` and resume it with `zenifra project resume --project <project-id>`. Both commands confirm the resulting state; read the project again when the final state matters to a later action.
 - Delete a project only after an exact project read and an informed, target-specific confirmation. Immediately before deletion, tell the user exactly what will be deleted by showing the project name, project ID, project type, selected organization, and effective API base; include the public URL when one exists, and state that project deletion is destructive. Ask for an explicit and unambiguous affirmative response for that exact target. Earlier generic authorization does not count, even when the user previously allowed other mutations or deployments. Only after receiving this confirmation may you add `--yes` and run `zenifra project delete --project <project-id> --yes`. Without `--yes`, the CLI does not send a removal request. Verify the final absence or deleted state through the supported read behavior before reporting completion.
 - If a lifecycle request times out or is interrupted, inspect the project before retrying. Do not assume either success or failure from the local timeout alone.
+
+## GitHub deployment settings
+
+Version-triggered GitHub deployment settings require a published `@zenifra/cli` version 0.4.0 or later. Installing the plugin does not install or update the CLI. Before using these commands, check `zenifra help project github` and use them only when the installed CLI exposes them.
+
+Read a project's repository, branch, deployment mode, and version settings with `zenifra project github --project <project-id> [--json]`. Project creation still starts its initial build from the selected branch; the selected mode controls later repository events. Changing deployment settings changes which future events start builds, so first verify the effective API, selected organization, exact project, and repository. Use a mode and tag pattern the user already specified without asking for redundant confirmation; clarify only missing or ambiguous inputs. For production, require explicit user scope. Then read the settings again to verify the effective state.
+
+The project wizard and `deploy-settings set` use the same four exclusive modes:
+
+- `manual` disables automatic branch and version-triggered builds. The user can still request a manual deploy with `zenifra deploy --project <project-id> --branch <branch>`.
+- `branch` enables builds for pushes to the project's configured branch and disables tag/release triggers.
+- `tag` enables builds when a tag is created and its name matches the required `--tag-pattern`; branch and release triggers are disabled.
+- `release` enables builds when a release is published and its tag matches the required `--tag-pattern`; branch and tag triggers are disabled. Prereleases are excluded by default. Use `--include-prereleases true` only when the user explicitly asks to deploy prereleases.
+
+Read or set the mode with the public CLI:
+
+```bash
+zenifra project github --project <project-id> [--json]
+zenifra project github deploy-settings set --project <project-id> --mode <manual|branch|tag|release> [--tag-pattern <pattern>] [--include-prereleases <true|false>] [--json]
+```
+
+`--tag-pattern` is required for `tag` and `release`, and is not accepted for `manual` or `branch`. It matches the tag name and supports an exact name or the `*` and `?` wildcards; it is not a regular expression and does not match a release title. `--include-prereleases` is accepted only for `release` and defaults to `false`. Treat including prereleases as a separate permission; a general request for release deployments does not authorize it. A configured trigger is not evidence that a later build or deployment succeeded. When a matching event occurs, follow the returned build through its terminal state and read the project back.
 
 ## Domains and MCP OAuth
 
@@ -169,6 +191,8 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Update a project image: `zenifra project image set --project <project-id> --image <image>`
 - Manage envs: `zenifra project envs --project <project-id>`, `zenifra project env add/update/remove --project <project-id> --name <name>`
 - Manage instances: `zenifra project instances --project <project-id>` and `zenifra project instances set --project <project-id> --count <n>`
+- Read GitHub repository and deployment settings: `zenifra project github --project <project-id> [--json]`
+- Configure GitHub deployment triggers: `zenifra project github deploy-settings set --project <project-id> --mode <manual|branch|tag|release> [--tag-pattern <pattern>] [--include-prereleases <true|false>] [--json]`
 - Trigger GitHub deploy and receive a `build_id`: `zenifra deploy --project <project-id> --branch main`
 - Watch that build with live logs: `zenifra deploy watch --project <project-id> --build <build-id>`
 - List builds: `zenifra builds --project <project-id>`
@@ -216,6 +240,9 @@ node zenifra-cli/bin/zenifra.mjs <command>
   - repository owner
   - repository name
   - branch
+  - one deployment mode: `manual`, `branch`, `tag`, or `release`
+  - a tag pattern for `tag` or `release`
+  - whether to include prereleases when using `release` (default: no; enabling them needs an explicit user request)
   - runtime
   - runtime version
   - start/build commands when applicable
