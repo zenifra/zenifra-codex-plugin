@@ -1,7 +1,7 @@
 {
   "name": "zenifra",
-  "version": "0.2.3",
-  "description": "Manage Zenifra projects and deployments from Codex and the terminal.",
+  "version": "0.3.0",
+  "description": "Manage Zenifra projects and deploy from supported Git providers.",
   "author": {
     "name": "Zenifra"
   },
@@ -11,6 +11,8 @@
   "keywords": [
     "zenifra",
     "deploy",
+    "git",
+    "forgejo",
     "projects",
     "cloud",
     "hosting"
@@ -19,7 +21,7 @@
   "interface": {
     "displayName": "Zenifra",
     "shortDescription": "Manage and inspect Zenifra projects.",
-    "longDescription": "Use Zenifra from Codex to authenticate, select an organization, manage projects and deployments, and inspect builds, logs, health, metrics, and usage.",
+    "longDescription": "Use Zenifra from Codex to authenticate, manage projects, deploy from GitHub and Forgejo, and inspect builds, logs, health, metrics, and usage.",
     "developerName": "Zenifra",
     "category": "Productivity",
     "capabilities": [
@@ -29,7 +31,7 @@
     "websiteURL": "https://zenifra.com/",
     "defaultPrompt": [
       "List my Zenifra projects.",
-      "Deploy a Zenifra project.",
+      "Deploy a Zenifra project from GitHub or Forgejo.",
       "Show my latest Zenifra builds.",
       "Check my Zenifra project health and logs."
     ],

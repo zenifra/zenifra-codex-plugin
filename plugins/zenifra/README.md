@@ -32,7 +32,8 @@ Depois disso, use:
 zenifra auth login --oauth
 zenifra whoami --json
 zenifra help project logs
-zenifra auth login --code 123456
+zenifra auth login
+zenifra auth api-key
 zenifra auth logout --revoke
 zenifra orgs
 zenifra org set
@@ -160,6 +161,27 @@ ou, como fallback dentro deste workspace:
 ```bash
 node ../../../../zenifra-cli/bin/zenifra.mjs <command>
 ```
+
+## Deploys a partir do Forgejo
+
+Para uso normal, o fluxo Forgejo exige `@zenifra/cli` 0.5.0 ou posterior; instalar o plugin nao instala nem atualiza o CLI. Confira a ajuda dos comandos instalados antes de usa-los. Mantenha projetos GitHub no fluxo `zenifra project github` e use `project source` apenas quando a origem retornada identificar `provider_id` como `forgejo`.
+
+Conecte ou gerencie a credencial Forgejo pelo Console com uma sessao interativa do owner. A CLI nao cria, rotaciona ou revoga esses tokens, e uma API key da organizacao ou sessao delegada nao substitui o owner. Nunca passe o token em argumentos, arquivos de configuracao, variaveis de ambiente, logs ou mensagens. Para deploy manual, o token precisa ler o repositorio. Para triggers automaticos, a conta precisa administrar hooks e o token precisa de `write:repository`; no Forgejo 16, tokens **Specific repositories** nao administram hooks. Use uma identidade dedicada com acesso somente aos repositorios necessarios e sem permissao de administrador da instancia. O [guia Forgejo completo](skills/zenifra/references/forgejo.md) explica os escopos e verificacoes.
+
+Use uma conexao ativa e resolva um caminho `owner/repository` explicitamente. Reaproveite os IDs opacos retornados em `source.connection_id` e `source.repository_id` no JSON de criacao. O wizard interativo cobre OCI e GitHub; para Forgejo, crie a aplicacao HTTP com `--config` e os campos de origem/build documentados. Os quatro modos sao `manual`, `branch`, `tag` e `release`; pre-releases ficam desabilitadas por padrao e exigem pedido explicito.
+
+```bash
+zenifra git providers --json
+zenifra git runtimes --json
+zenifra git connections --json
+zenifra git repositories resolve --connection <connection-id> --path <owner/repository> --json
+zenifra git branches --connection <connection-id> --repository <opaque-repository-id> --json
+zenifra project source deploy-settings set --project <project-id> --mode release --tag-pattern 'v*' --include-prereleases false --json
+zenifra deploy --project <project-id> --commit-sha <full-commit-sha>
+zenifra deploy watch --project <project-id> --build <build-id>
+```
+
+Compare o SHA reportado pela build com o commit pretendido, depois confira a URL e o comportamento esperado da aplicacao. Uma conexao validada ou uma build bem-sucedida, sozinha, nao comprova a entrega do webhook nem a disponibilidade da aplicacao.
 
 ## Marketplace do Codex
 

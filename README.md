@@ -29,7 +29,7 @@ npm test
 npm run check
 ```
 
-O plugin orienta o Codex a usar os fluxos de build GitHub do CLI, incluindo:
+O plugin orienta o Codex a usar os fluxos de build GitHub e Forgejo do CLI, incluindo:
 
 - `zenifra builds --project <project-id>`
 - `zenifra builds logs --project <project-id> --build <build-id> [--follow]`
@@ -37,10 +37,14 @@ O plugin orienta o Codex a usar os fluxos de build GitHub do CLI, incluindo:
 - `zenifra deploy watch --project <project-id> --build <build-id>`
 - `zenifra project autoscaling events --project <project-id>`
 - `zenifra project billing usage --project <project-id> --json`
+- `zenifra git providers --json`
+- `zenifra git connections --json`
+- `zenifra git repositories resolve --connection <connection-id> --path <owner/repository> --json`
+- `zenifra project source --project <project-id> --json`
 
 Fluxo recomendado:
 
-- `zenifra deploy` dispara o build GitHub e retorna o `build_id`
+- `zenifra deploy` dispara uma build manual para um projeto GitHub ou Forgejo e retorna o `build_id`
 - `zenifra deploy watch` usa esse `build_id` para acompanhar status e logs incrementais ate o estado terminal
 - `zenifra builds` lista o historico; `zenifra builds logs` reabre ou segue os logs de um build especifico
 

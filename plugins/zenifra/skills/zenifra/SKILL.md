@@ -1,6 +1,6 @@
 ---
 name: zenifra
-description: Use when the user wants to manage Zenifra projects, profiles, organizations, deployments, builds, or authentication from Codex.
+description: Use when the user wants to manage Zenifra projects, profiles, organizations, deployments, builds, authentication, or supported Git providers from Codex.
 ---
 
 # Zenifra
@@ -13,7 +13,7 @@ This skill lives in a public repository and is limited to the public `zenifra-cl
 
 ## Safe operation rules
 
-- Treat read-only commands and mutating commands differently. Listing, plan catalogs, project info, URLs, logs, metrics, capabilities, builds, deployments, billing usage, Valkey status, identity, profile inspection, and GitHub settings reads are read-oriented; create, deploy, GitHub deployment settings, stop, resume, delete, image, exposure, environment, instance, autoscaling, credential rotation, logout with `--revoke`, and profile changes have side effects.
+- Treat read-only commands and mutating commands differently. Listing, plan catalogs, project info, URLs, logs, metrics, capabilities, builds, deployments, billing usage, Valkey status, identity, profile inspection, Git-provider/connection/repository reads, and GitHub or Forgejo source settings reads are read-oriented; create, deploy, GitHub or Forgejo deployment settings, stop, resume, delete, image, exposure, environment, instance, autoscaling, credential rotation, logout with `--revoke`, and profile changes have side effects.
 - Before a mutation, verify the exact profile, API base, organization, project, branch or commit, and intended values. Production mutations require explicit user scope; never infer them from a name such as `prod`.
 - Use `--idempotency-key` for project creation and Valkey credential rotation when a retry may happen. Retry only with the same key and only after inspecting the previous response; do not mask authentication, authorization, validation, setup, or cleanup failures with generic retries.
 - After every external mutation, read back the final state. A successful request or an accepted asynchronous operation is not proof that the desired state was reached.
@@ -28,6 +28,8 @@ Before any production mutation, make the target explicit:
 3. Read the current plan catalog with `zenifra plans` and confirm the project type, plan, payment mode, storage, exposure, deploy source, port, instances, and initial environments. Check the current `capabilities.*` fields instead of inferring availability from price or descriptive features. In particular, use `capabilities.logs`, `capabilities.metrics`, and `capabilities.healthcheck` for those product capabilities. `--json` preserves the public catalog response for automation.
 4. Use an idempotency key for project creation and Valkey credential rotation. If a request times out, inspect the resulting project or operation before retrying with the same key.
 5. After the mutation, read the project URL and status, then follow the build or deployment identifier until it reaches a terminal state.
+
+If the target uses another saved profile, select it with `zenifra profile list` and `zenifra profile use <name>`, then run `zenifra whoami --json` again. Do not pass `--profile` to operational commands unless that command's help explicitly supports it. Environment overrides can change the effective API or authentication; use `whoami` to check the effective target without printing credentials, and do not inspect local profile files.
 
 Treat a project as ready only after the public URL, DNS/TLS, and the product health or OAuth behavior expected for that project have been checked. A created project or successful API response alone is not readiness.
 
@@ -58,6 +60,10 @@ zenifra project github deploy-settings set --project <project-id> --mode <manual
 ```
 
 `--tag-pattern` is required for `tag` and `release`, and is not accepted for `manual` or `branch`. It matches the tag name and supports an exact name or the `*` and `?` wildcards; it is not a regular expression and does not match a release title. `--include-prereleases` is accepted only for `release` and defaults to `false`. Treat including prereleases as a separate permission; a general request for release deployments does not authorize it. A configured trigger is not evidence that a later build or deployment succeeded. When a matching event occurs, follow the returned build through its terminal state and read the project back.
+
+## Forgejo source deployments
+
+For Forgejo connections, repositories, project sources, or deployment triggers, read [the Forgejo workflow](references/forgejo.md) before acting. The published end-user CLI requirement is `@zenifra/cli` 0.5.0 or later; installing this plugin does not install or update the CLI. Check the installed command help. An explicitly authorized development workspace may use its local CLI build when that help exposes the operation. Keep GitHub projects on the GitHub workflow above.
 
 ## Domains and MCP OAuth
 
@@ -161,13 +167,13 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Browser login on the active profile: `zenifra auth login --oauth`
 - Password login on the active profile: `zenifra auth login`
 - Browser login on an explicit environment/profile: `zenifra auth login --oauth --profile staging --api-base https://api.example.test/v1`
-- Save an org API key on the active profile: `zenifra auth api-key --key znf_sua_chave`
-- Save an org API key on another profile: `zenifra auth api-key --profile prod --key znf_sua_chave`
+- Save an org API key on the active profile: `zenifra auth api-key` and enter it at the hidden prompt.
+- Save an org API key on another profile: `zenifra auth api-key --profile prod` and enter it at the hidden prompt.
 - Clear only local auth from a profile: `zenifra auth logout [--profile <name>]`
 - Revoke the OAuth connection (OAuth profile) or server login sessions (password profile), then clear local auth: `zenifra auth logout [--profile <name>] --revoke`
 - List profiles: `zenifra profile list`
 - Show a profile: `zenifra profile show [name]`
-- Add a profile: `zenifra profile add --name staging --description Homologacao --api-base https://api.example.test/v1 --mode api-key --key znf_sua_chave`
+- Add an API-key profile: `zenifra profile add --name staging --description Homologacao --api-base https://api.example.test/v1 --mode api-key` and enter the key at the hidden prompt.
 - Switch the active profile: `zenifra profile use staging`
 - Edit a profile: `zenifra profile edit staging --description "Homologacao interna"`
 - Remove a non-active profile: `zenifra profile remove staging`
@@ -195,6 +201,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Configure GitHub deployment triggers: `zenifra project github deploy-settings set --project <project-id> --mode <manual|branch|tag|release> [--tag-pattern <pattern>] [--include-prereleases <true|false>] [--json]`
 - Trigger GitHub deploy and receive a `build_id`: `zenifra deploy --project <project-id> --branch main`
 - Watch that build with live logs: `zenifra deploy watch --project <project-id> --build <build-id>`
+- For Forgejo source setup, project creation, and triggers, use [the Forgejo workflow](references/forgejo.md); do not apply GitHub commands to a Forgejo project.
 - List builds: `zenifra builds --project <project-id>`
 - List deployments/builds: `zenifra deployments --project <project-id>`. OCI-created projects include their initial deployment history.
 
@@ -222,6 +229,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - For HTTP projects, also confirm the deploy strategy:
   - OCI or image URL flow
   - GitHub flow
+  - Forgejo flow described in [references/forgejo.md](references/forgejo.md)
   - exposure: `public` creates route/domain, `private` keeps the app without internet exposure
 - For HTTP via OCI, confirm at least:
   - image URL
