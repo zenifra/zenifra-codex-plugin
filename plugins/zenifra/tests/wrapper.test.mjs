@@ -37,7 +37,7 @@ test('delegates to zenifra on PATH when the monorepo CLI path is unavailable', a
   }
 });
 
-test('passes arguments once to an explicit CLI executable', async () => {
+test('passes Forgejo CLI arguments once to an explicit CLI executable', async () => {
   const tempRoot = await mkdtemp(join(tmpdir(), 'zenifra-plugin-explicit-cli-'));
 
   try {
@@ -50,7 +50,10 @@ test('passes arguments once to an explicit CLI executable', async () => {
     await writeFile(fakeCliPath, '#!/usr/bin/env node\nconsole.log(JSON.stringify(process.argv.slice(2)));\n');
     await chmod(fakeCliPath, 0o755);
 
-    const args = ['help', 'project', 'github', 'deploy-settings', 'set'];
+    const args = [
+      'project', 'source', 'deploy-settings', 'set', '--project', 'project-opaque-id',
+      '--mode', 'release', '--tag-pattern', 'v*', '--include-prereleases', 'false', '--json',
+    ];
     const result = spawnSync(process.execPath, [wrapperPath, ...args], {
       cwd: tempRoot,
       env: {
@@ -158,7 +161,7 @@ test('documents the current CLI identity, lifecycle, plan, and build-log contrac
   assert.match(publicDocs, /loopback.*same machine|mesma maquina.*loopback/is);
   assert.match(publicDocs, /initial deployment history|historico inicial de deployment/i);
   assert.doesNotMatch(publicDocs, /does not expose a project deletion command/i);
-  assert.equal(manifest.version, '0.2.3');
+  assert.equal(manifest.version, '0.3.0');
   assert.equal(packageJson.version, manifest.version);
 });
 
@@ -175,7 +178,7 @@ test('requires an informed, target-specific confirmation immediately before proj
   assert.match(publicDocs, /explicit.*unambiguous.*affirmative/is);
   assert.match(publicDocs, /earlier.*generic.*authorization.*does not count/is);
   assert.match(publicDocs, /only after.*confirmation.*--yes/is);
-  assert.equal(manifest.version, '0.2.3');
+  assert.equal(manifest.version, '0.3.0');
   assert.equal(packageJson.version, manifest.version);
 });
 
