@@ -1,6 +1,6 @@
 {
   "name": "zenifra",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Manage Zenifra projects and deploy from supported Git providers.",
   "author": {
     "name": "Zenifra"
