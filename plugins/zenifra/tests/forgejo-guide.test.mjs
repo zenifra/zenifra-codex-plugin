@@ -17,7 +17,7 @@ test('links the Zenifra skill to the Forgejo workflow and complete HTTP config',
     new URL(exampleLink, guideUrl).href,
     new URL('../examples/http-forgejo-project.json', import.meta.url).href,
   );
-  assert.equal(manifest.version, '0.3.0');
+  assert.equal(manifest.version, '0.4.0');
   assert.equal(packageJson.version, manifest.version);
   assert.match(manifest.interface.longDescription, /Forgejo/);
 

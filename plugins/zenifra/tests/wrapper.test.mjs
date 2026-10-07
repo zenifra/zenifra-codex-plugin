@@ -236,7 +236,7 @@ test('documents the current CLI identity, lifecycle, plan, and build-log contrac
   assert.match(publicDocs, /loopback.*same machine|mesma maquina.*loopback/is);
   assert.match(publicDocs, /initial deployment history|historico inicial de deployment/i);
   assert.doesNotMatch(publicDocs, /does not expose a project deletion command/i);
-  assert.equal(manifest.version, '0.3.0');
+  assert.equal(manifest.version, '0.4.0');
   assert.equal(packageJson.version, manifest.version);
 });
 
@@ -253,7 +253,7 @@ test('requires an informed, target-specific confirmation immediately before proj
   assert.match(publicDocs, /explicit.*unambiguous.*affirmative/is);
   assert.match(publicDocs, /earlier.*generic.*authorization.*does not count/is);
   assert.match(publicDocs, /only after.*confirmation.*--yes/is);
-  assert.equal(manifest.version, '0.3.0');
+  assert.equal(manifest.version, '0.4.0');
   assert.equal(packageJson.version, manifest.version);
 });
 
