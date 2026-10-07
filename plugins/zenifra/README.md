@@ -38,7 +38,9 @@ zenifra auth logout --revoke
 zenifra orgs
 zenifra org set
 zenifra projects --type http --page 1 --limit 15
+zenifra plans --type job --json
 zenifra create project --name app-http-autoscaling --plan premium --payment-mode hourly --config @examples/http-autoscaling-project.json
+zenifra create project --name nightly-report --plan job-basic --payment-mode per_minute --config @job-config.json --idempotency-key <key>
 zenifra project info --project <project-id>
 zenifra project url --project <project-id>
 zenifra project stop --project <project-id>
@@ -57,6 +59,9 @@ zenifra project autoscaling set --project <project-id> --min 2 --max 8 --cpu 70 
 zenifra project autoscaling disable --project <project-id>
 zenifra project autoscaling events --project <project-id> --direction scale_up --page 1 --limit 10
 zenifra project billing usage --project <project-id> --from 2026-06-01T00:00:00Z --to 2026-06-02T00:00:00Z --page 1 --limit 20 --json
+zenifra project runs --project <project-id> --page 1 --limit 20 --json
+zenifra project runs logs --project <project-id> --run <run-id>
+zenifra project runs cancel --project <project-id> --run <run-id>
 zenifra project instances --project <project-id>
 zenifra project instances set --project <project-id> --count <n>
 zenifra project github --project <project-id>
@@ -100,6 +105,12 @@ O catalogo humano de planos mostra as capacidades anunciadas. Para automacao, `z
 Use `zenifra project stop --project <project-id>` e `zenifra project resume --project <project-id>` para controlar o estado do projeto. Para excluir, leia primeiro o projeto e, imediatamente antes da remocao, mostre expressamente ao usuario o nome, ID, tipo, organizacao selecionada, API efetiva e URL publica quando existir. Informe que a exclusao do projeto e destrutiva e solicite uma resposta afirmativa, explicita e inequivoca para aquele alvo. Uma autorizacao generica anterior nao vale como confirmacao. Somente depois dessa resposta use `zenifra project delete --project <project-id> --yes`; sem `--yes`, a CLI nao envia a solicitacao de remocao. Valide o estado final depois.
 
 Projetos criados por imagem OCI passam a ter um historico inicial de deployment. Consulte-o com `zenifra deployments --project <project-id>` e continue distinguindo projeto criado, build concluido, deployment concluido e aplicacao pronta.
+
+Jobs agendados usam planos `job-*`, cobranca `per_minute`, uma imagem OCI pronta e cron de cinco campos em UTC. Eles nao possuem URL publica, porta, exposicao ou instancias. No CLI V1, use somente `zenifra plans --type job [--json]`, `zenifra create project ... --plan <job-plan> --payment-mode per_minute --config @<job-config.json> --idempotency-key <key>`, `zenifra project info --project <project-id>`, `zenifra project runs --project <project-id>`, `zenifra project runs logs --project <project-id> --run <run-id>` e `zenifra project runs cancel --project <project-id> --run <run-id>`. Esse fluxo aceita apenas `config.image`; `config.envs` e obrigatorio: use `envs: []` quando nao houver variaveis ou um array de objetos `{name, value}`, sem omitir o campo. Nao use `config.github`, `job.command` ou `job.args` no CLI V1. Para GitHub ou comandos/argumentos explicitos, use a API avancada documentada, sem inventar flags ou comandos do CLI.
+
+`billed_minutes` e a duracao arredondada para cima, com minimo de 1 e maximo de 60 minutos. `price_per_minute`, `amount` e `total_amount` sao numeros em centavos de BRL e podem ser fracionarios; preserve o JSON para manter a precisao; apresentacoes humanas podem usar ate quatro casas decimais. O valor terminal e calculado pelos minutos faturados vezes a tarifa vigente e armazenado exato, sem arredondamento para cima (uma execucao de R$ 0,0005 e guardada como `amount: 0.05`), com a tarifa aplicada. A duracao conta do inicio ao fim reais do container: agendamento e download da imagem nao sao cobrados. O custo do ciclo soma os valores persistidos, nao recalcula pelo catalogo atual.
+
+`project runs` e os logs/metricas publicos mostram somente o ciclo de cobranca atual. Leia logs com a permissao `project.logs.read` e metricas com `project.metrics.read`. Se a capacidade estiver indisponivel no catalogo ou na resposta, trate-a como indisponivel e nao invente uma rota; quando uma rota existente responder `403`, a capacidade existe, mas o principal nao tem a permissao correspondente. A API `GET /v1/project/:id/job-runs/cost-summary` (permissao `project.billing.read`) expoe `total_amount`, `executed_runs`, `billed_minutes`, `cycle_started_at` e `next_reset_at`; o CLI nao tem um comando equivalente. A reinicializacao ocorre na data agendada, independentemente da liquidacao financeira; uma execucao que atravessa a virada continua no ciclo em que comecou. Registros internos de execucao e metricas antigas permanecem retidos, enquanto o uso persistido e os registros financeiros permanecem disponiveis para auditoria e nao sao apagados pelo reinicio do ciclo publico. Depois que o uso terminal e materializado, o custo terminal aparece antes da liquidacao financeira. Nao ha execucoes paralelas nem retry automatico; codigo de saida `0` significa sucesso e qualquer codigo nao zero, inclusive `1`, significa falha. O cancelamento permite ate 30 segundos para encerramento gracioso e somente depois solicita limpeza forcada. O CLI nao oferece comando de cost-summary nem de alteracao do cron; use a API/Console documentada para esses dados.
 
 Para dominios personalizados, mantenha o dominio principal separado e aguarde DNS/TLS antes de concluir. Para MCP, use a URL completa terminada em `/mcp`, confira a descoberta do recurso e aceite `401` como o desafio esperado antes do OAuth.
 

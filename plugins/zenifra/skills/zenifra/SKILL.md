@@ -27,11 +27,11 @@ Before any production mutation, make the target explicit:
 2. For a user-login profile, run `zenifra orgs --json` and select the organization with `zenifra org set --org <id>` or pass `--org <id>` for one command. An OAuth grant belongs to the account; it does not change organization membership.
 3. Read the current plan catalog with `zenifra plans` and confirm the project type, plan, payment mode, storage, exposure, deploy source, port, instances, and initial environments. Check the current `capabilities.*` fields instead of inferring availability from price or descriptive features. In particular, use `capabilities.logs`, `capabilities.metrics`, and `capabilities.healthcheck` for those product capabilities. `--json` preserves the public catalog response for automation.
 4. Use an idempotency key for project creation and Valkey credential rotation. If a request times out, inspect the resulting project or operation before retrying with the same key.
-5. After the mutation, read the project URL and status, then follow the build or deployment identifier until it reaches a terminal state.
+5. After the mutation, read the project status. For HTTP projects, also read the URL and follow the build or deployment identifier until it reaches a terminal state. For Scheduled Jobs, follow the run history instead.
 
 If the target uses another saved profile, select it with `zenifra profile list` and `zenifra profile use <name>`, then run `zenifra whoami --json` again. Do not pass `--profile` to operational commands unless that command's help explicitly supports it. Environment overrides can change the effective API or authentication; use `whoami` to check the effective target without printing credentials, and do not inspect local profile files.
 
-Treat a project as ready only after the public URL, DNS/TLS, and the product health or OAuth behavior expected for that project have been checked. A created project or successful API response alone is not readiness.
+Treat an HTTP project as ready only after the public URL, DNS/TLS, and the product health or OAuth behavior expected for that project have been checked. A Scheduled Job has no public URL: treat it as ready only after project information confirms the expected Job configuration and a scheduled run reaches a terminal state; read that run's logs when permission allows. A created project or successful API response alone is not readiness.
 
 ## Project lifecycle
 
@@ -130,6 +130,17 @@ zenifra projects --org <another-organization-id>
 - `valkey credentials rotate` returns an asynchronous operation. Use `--wait` or the returned operation identifier with `valkey credentials status`, and save a newly returned connection value only in a secure local destination.
 - `zenifra valkey connection` remains masked by design. A usable connection from a completed rotation may be written with an explicit private `--connection-file <path>`; the file preserves the exact connection string returned by the backend. Never paste it into chat, commit it, or place it in a public example. If a consuming client requires `rediss://` instead of a backend-returned `valkeys://`, adapt the value only in that client's private configuration, keeping the host, port, credentials, and parameters unchanged; never alter the CLI output or the saved backend value.
 
+## Scheduled Jobs guidance
+
+- Read only the Jobs catalog with `zenifra plans --type job [--json]`. Job plan IDs use the `job-` prefix, `payment_mode` is `per_minute`, and JSON monetary values such as `price_per_minute`, run `amount`, and cycle `total_amount` are expressed in BRL cents and may be fractional. Preserve those JSON values; human-readable cost and minute displays may use up to four decimal places. The catalog is the source of the current rate, so do not hard-code prices. An explicit `--type job` request must report that Scheduled Jobs is unavailable; the API response uses code `SCHEDULED_JOBS_UNAVAILABLE`. Do not substitute another catalog.
+- The CLI V1 creates Scheduled Jobs from a ready OCI image. Confirm the `job-*` plan, `per_minute` billing, image reference and access, five-field UTC cron, storage, and initial environment variables. Jobs do not use a public URL, port, exposure, or instances. The CLI V1 accepts only `config.image` and does not support `config.github`, `job.command`, or `job.args`; use the documented advanced API for GitHub sources or explicit commands/arguments.
+- Use `zenifra create project --name <name> --plan <job-plan> --payment-mode per_minute --config @<job-config.json> --idempotency-key <key>` or the interactive wizard. A Job config uses `type_project: job`, an OCI `image`, `job.cron`, `storage`, and a required `envs` array. Use `envs: []` when there are no variables or an array of `{name, value}` objects; do not omit `envs`.
+- `billed_minutes` rounds duration up with a minimum of 1 and a maximum of 60. A terminal amount is `billed_minutes × price_per_minute`, stored exactly and never rounded up (a R$0.0005 run is stored as `amount: 0.05`), and persisted with the rate in effect. Duration runs from the container's real start to its finish, so scheduling and image download time are not charged; the cycle summary adds those persisted amounts and does not recalculate them from the current catalog.
+- List the current billing-cycle runs with `zenifra project runs --project <project-id> [--page <n>] [--limit <n>] [--json]`. The public runs, logs, metrics, total cost, run count, and billed minutes reset on the scheduled cycle date independently of financial settlement. Read run logs with `project.logs.read` and run metrics with `project.metrics.read`. If the catalog or response says a capability is unavailable, treat it as unavailable and do not invent a route; when an existing route returns `403`, the capability exists but the principal lacks the matching permission. A run that crosses the boundary stays in the cycle where it started; older run and metric records remain retained internally, while persisted financial records remain available for audit and are not deleted by the public cycle reset. Follow pagination and preserve unknown duration, billed minutes, or amount as unknown rather than zero. After terminal usage is materialized, terminal cost is visible before financial settlement.
+- The API-only `GET /v1/project/:id/job-runs/cost-summary` with `project.billing.read` returns `total_amount`, `executed_runs`, `billed_minutes`, `cycle_started_at`, and `next_reset_at`; the CLI has no equivalent cost-summary command.
+- Read one run's logs with `zenifra project runs logs --project <project-id> --run <run-id> [--json]`. Cancel an active run only with explicit authorization and the `project.job-run.cancel` permission by using `zenifra project runs cancel --project <project-id> --run <run-id> [--json]`; cancellation allows up to 30 seconds for graceful shutdown before forced cleanup.
+- Exit code `0` means success; any non-zero code, including `1`, means failure. There is no automatic retry and no parallel run when an occurrence overlaps an active run. The CLI does not expose a cost-summary or schedule-update command; say so and use only the documented API/Console instead of inventing one or calling an undocumented endpoint.
+
 ## Output and asynchronous operations
 
 - Human output is for direct inspection. `--json` preserves the public response for ordinary commands; do not parse table columns as an API contract.
@@ -178,13 +189,16 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - Edit a profile: `zenifra profile edit staging --description "Homologacao interna"`
 - Remove a non-active profile: `zenifra profile remove staging`
 - Select organization for a user-login profile: `zenifra org set`
-- Compare public plan prices: `zenifra plans`, `zenifra plans --type http`, `zenifra plans --type storage --json`
+- Compare public plan prices: `zenifra plans`, `zenifra plans --type http`, `zenifra plans --type storage --json`, `zenifra plans --type job --json`
 - List projects: `zenifra projects --type http --page 1 --limit 15`
 - Create a project from flags: `zenifra create project --name <name> --plan free --payment-mode hourly --config @project.json`
 - Run the interactive project wizard: `zenifra create project`
 - Read hourly consumption and compute/storage costs: `zenifra project billing usage --project <project-id> [--from <ISO>] [--to <ISO>] [--page <n>] [--limit <n>] [--json]`
 - Read Valkey status and masked connection data: `zenifra valkey status --project <project-id>` and `zenifra valkey connection --project <project-id>`
 - Rotate a Valkey credential and follow the operation: `zenifra valkey credentials rotate --project <project-id> [--wait]` or `zenifra valkey credentials status --project <project-id> --operation <operation-id>`
+- List Scheduled Job runs: `zenifra project runs --project <project-id> [--page <n>] [--limit <n>] [--json]`
+- Read Scheduled Job run logs: `zenifra project runs logs --project <project-id> --run <run-id> [--json]`
+- Cancel an authorized active Scheduled Job run: `zenifra project runs cancel --project <project-id> --run <run-id> [--json]`
 - Get project info or URL: `zenifra project info --project <project-id>` or `zenifra project url --project <project-id>`
 - Stop or resume a project: `zenifra project stop --project <project-id>` and `zenifra project resume --project <project-id>`
 - Delete an explicitly authorized project: `zenifra project delete --project <project-id> --yes`
@@ -212,6 +226,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - PostgreSQL: `zenifra create project --name app-postgres --plan db-basic --payment-mode monthly --config @examples/postgresql-project.json`
 - MariaDB: `zenifra create project --name app-mariadb --plan db-basic --payment-mode monthly --config @examples/mariadb-project.json`
 - HTTP with autoscaling: `zenifra create project --name app-http-autoscaling --plan premium --payment-mode hourly --config @examples/http-autoscaling-project.json`
+- Scheduled Job from a ready OCI image: `zenifra create project --name nightly-report --plan job-basic --payment-mode per_minute --config @job-config.json --idempotency-key <key>`
 - When the user prefers prompts instead of JSON, run `zenifra create project` and use the wizard.
 - Treat these examples as starting points, not as permission to assume production values.
 
@@ -268,6 +283,12 @@ node zenifra-cli/bin/zenifra.mjs <command>
   - plan
   - version
   - storage
+- For Scheduled Jobs, confirm at least:
+  - a `job-*` plan and `per_minute` billing
+  - a ready OCI image and whether it requires authentication
+  - a five-field cron expression interpreted in UTC
+  - storage and initial envs
+  - that no public URL, port, exposure, or instances are expected
 - If the agent is not confident about plan choice, deploy strategy, storage, envs, or any other create-time field that can affect cost or production behavior, ask the user before creating the project.
 - If the user has not explicitly confirmed those inputs, prefer asking over inferring.
 
@@ -290,6 +311,7 @@ node zenifra-cli/bin/zenifra.mjs <command>
 - `zenifra deploy` returns a `build_id`; use it with `zenifra deploy watch --project <project-id> --build <build-id>` to follow the build until completion.
 - `zenifra project logs` is for runtime logs. `zenifra builds logs` is for GitHub build logs.
 - Build log `source: "event"` entries are detailed events; `source: "summary"` is a legacy terminal fallback and may be a single line.
+- Scheduled Job logs belong to a public run ID and use `zenifra project runs logs`; do not use `project logs` or build-log commands for them.
 - `zenifra deploy watch` now streams incremental build logs until the build reaches a terminal status.
 - OCI project creation records an initial deployment, so use `zenifra deployments --project <project-id>` to inspect its initial deployment history as well as later deployments.
 - When a required argument is missing in commands like `zenifra deploy`, `zenifra deploy watch`, `zenifra builds`, or common `project` subcommands, the CLI now prints the command-specific help instead of only a terse validation error.
