@@ -1,6 +1,6 @@
 {
   "name": "@zenifra/codex-plugin",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "Zenifra Codex plugin.",
   "type": "module",
