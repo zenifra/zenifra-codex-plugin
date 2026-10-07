@@ -176,9 +176,10 @@ test('documents the Scheduled Jobs CLI boundary and billing-cycle contract in ea
     }
     assert.match(content, /billed_minutes/, `${name}: missing billed minutes`);
     assert.match(content, /minimum of 1.*maximum of 60|m[ií]nimo de 1.*m[aá]ximo de 60/i, `${name}: missing minute bounds`);
-    assert.match(content, /HALF_UP/, `${name}: missing rounding rule`);
-    assert.match(content, /one decimal cent|uma casa decimal de centavo/i, `${name}: missing precise rounding unit`);
-    assert.match(content, /R\$ ?0[.,]001/, `${name}: missing one-decimal-cent example`);
+    assert.match(content, /never rounded up|sem arredondamento para cima/i, `${name}: missing exact-amount rule`);
+    assert.doesNotMatch(content, /HALF_UP|one decimal cent|uma casa decimal de centavo/i, `${name}: per-run rounding must not be documented`);
+    assert.match(content, /image download|download da imagem/i, `${name}: missing container-start billing`);
+    assert.match(content, /amount: 0\.05/, `${name}: missing sub-cent example`);
     assert.match(content, /stored amounts|persisted amounts|valores armazenados|valores persistidos/i, `${name}: missing persisted amounts`);
     assert.match(content, /current billing[- ]cycle|ciclo de cobranca|ciclo de cobrança/i, `${name}: missing cycle boundary`);
     assert.match(content, /GET \/v1\/project\/:id\/job-runs\/cost-summary/, `${name}: missing cost-summary API`);
@@ -188,7 +189,7 @@ test('documents the Scheduled Jobs CLI boundary and billing-cycle contract in ea
     assert.match(content, surface.unavailable, `${name}: missing unavailable-vs-403 distinction`);
     assert.match(content, /independent(?:ly)? of financial settlement|independentemente d[ae] liquidacao|independentemente d[ae] liquidação/i, `${name}: missing settlement-independent reset`);
     assert.match(content, /cycle where it started|ciclo em que comecou|ciclo em que começou/i, `${name}: missing start-time attribution`);
-    assert.match(content, /no more than three decimal places|no maximo tres casas decimais|no máximo três casas decimais/i, `${name}: missing display precision`);
+    assert.match(content, /up to four decimal places|ate quatro casas decimais|até quatro casas decimais/i, `${name}: missing display precision`);
     assert.match(content, /30 seconds|30 segundos/, `${name}: missing cancellation grace`);
     assert.match(content, /graceful shutdown|encerramento gracioso/i, `${name}: missing graceful cancellation`);
     assert.match(content, /forced cleanup|limpeza forcada|limpeza forçada/i, `${name}: missing forced cancellation`);
