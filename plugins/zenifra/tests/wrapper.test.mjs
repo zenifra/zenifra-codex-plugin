@@ -189,7 +189,7 @@ test('documents the Scheduled Jobs CLI boundary and billing-cycle contract in ea
     assert.match(content, surface.unavailable, `${name}: missing unavailable-vs-403 distinction`);
     assert.match(content, /independent(?:ly)? of financial settlement|independentemente d[ae] liquidacao|independentemente d[ae] liquidação/i, `${name}: missing settlement-independent reset`);
     assert.match(content, /cycle where it started|ciclo em que comecou|ciclo em que começou/i, `${name}: missing start-time attribution`);
-    assert.match(content, /up to four decimal places|ate quatro casas decimais|até quatro casas decimais/i, `${name}: missing display precision`);
+    assert.match(content, /up to six decimal places for the per-minute price|ate seis casas decimais para o preco por minuto|até seis casas decimais para o preço por minuto/i, `${name}: missing display precision`);
     assert.match(content, /30 seconds|30 segundos/, `${name}: missing cancellation grace`);
     assert.match(content, /graceful shutdown|encerramento gracioso/i, `${name}: missing graceful cancellation`);
     assert.match(content, /forced cleanup|limpeza forcada|limpeza forçada/i, `${name}: missing forced cancellation`);
@@ -236,7 +236,7 @@ test('documents the current CLI identity, lifecycle, plan, and build-log contrac
   assert.match(publicDocs, /loopback.*same machine|mesma maquina.*loopback/is);
   assert.match(publicDocs, /initial deployment history|historico inicial de deployment/i);
   assert.doesNotMatch(publicDocs, /does not expose a project deletion command/i);
-  assert.equal(manifest.version, '0.4.0');
+  assert.equal(manifest.version, '0.4.1');
   assert.equal(packageJson.version, manifest.version);
 });
 
@@ -253,7 +253,7 @@ test('requires an informed, target-specific confirmation immediately before proj
   assert.match(publicDocs, /explicit.*unambiguous.*affirmative/is);
   assert.match(publicDocs, /earlier.*generic.*authorization.*does not count/is);
   assert.match(publicDocs, /only after.*confirmation.*--yes/is);
-  assert.equal(manifest.version, '0.4.0');
+  assert.equal(manifest.version, '0.4.1');
   assert.equal(packageJson.version, manifest.version);
 });
 
