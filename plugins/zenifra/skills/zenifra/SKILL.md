@@ -9,7 +9,7 @@ Use the Zenifra CLI for product operations.
 
 ## Public repository boundary
 
-This skill lives in a public repository and is limited to the public `zenifra-cli` and documented product concepts. Never commit or paste passwords, TOTP codes, API keys, access tokens, connection strings, customer data, private project identifiers, or unredacted command output. Never mention or expose private architecture, internal infrastructure, internal service names, operational runbooks, or development-tool details. Do not call private or undocumented API endpoints to compensate for a missing CLI command.
+This skill lives in a public repository and is limited to the public Zenifra CLI (npm package `@zenifra/cli`, command `zenifra`) and documented product concepts. Never commit or paste passwords, TOTP codes, API keys, access tokens, connection strings, customer data, private project identifiers, or unredacted command output. Never mention or expose private architecture, internal infrastructure, internal service names, operational runbooks, or development-tool details. Do not call private or undocumented API endpoints to compensate for a missing CLI command.
 
 ## Safe operation rules
 
