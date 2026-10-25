@@ -38,7 +38,7 @@ zenifra auth logout --revoke
 zenifra orgs
 zenifra org set
 zenifra projects --type http --page 1 --limit 15
-zenifra plans --type job --json
+zenifra plans --type jobs --json
 zenifra create project --name app-http-autoscaling --plan premium --payment-mode hourly --config @examples/http-autoscaling-project.json
 zenifra create project --name nightly-report --plan job-basic --payment-mode per_minute --config @job-config.json --idempotency-key <key>
 zenifra project info --project <project-id>
@@ -106,7 +106,7 @@ Use `zenifra project stop --project <project-id>` e `zenifra project resume --pr
 
 Projetos criados por imagem OCI passam a ter um historico inicial de deployment. Consulte-o com `zenifra deployments --project <project-id>` e continue distinguindo projeto criado, build concluido, deployment concluido e aplicacao pronta.
 
-Jobs agendados usam planos `job-*`, cobranca `per_minute`, uma imagem OCI pronta e cron de cinco campos em UTC. Eles nao possuem URL publica, porta, exposicao ou instancias. No CLI V1, use somente `zenifra plans --type job [--json]`, `zenifra create project ... --plan <job-plan> --payment-mode per_minute --config @<job-config.json> --idempotency-key <key>`, `zenifra project info --project <project-id>`, `zenifra project runs --project <project-id>`, `zenifra project runs logs --project <project-id> --run <run-id>` e `zenifra project runs cancel --project <project-id> --run <run-id>`. Esse fluxo aceita apenas `config.image`; `config.envs` e obrigatorio: use `envs: []` quando nao houver variaveis ou um array de objetos `{name, value}`, sem omitir o campo. Nao use `config.github`, `job.command` ou `job.args` no CLI V1. Para GitHub ou comandos/argumentos explicitos, use a API avancada documentada, sem inventar flags ou comandos do CLI.
+Jobs agendados usam planos `job-*`, cobranca `per_minute`, uma imagem OCI pronta e cron de cinco campos em UTC. Eles nao possuem URL publica, porta, exposicao ou instancias. No CLI V1, use somente `zenifra plans --type jobs [--json]`, `zenifra create project ... --plan <job-plan> --payment-mode per_minute --config @<job-config.json> --idempotency-key <key>`, `zenifra project info --project <project-id>`, `zenifra project runs --project <project-id>`, `zenifra project runs logs --project <project-id> --run <run-id>` e `zenifra project runs cancel --project <project-id> --run <run-id>`. Esse fluxo aceita apenas `config.image`; `config.envs` e obrigatorio: use `envs: []` quando nao houver variaveis ou um array de objetos `{name, value}`, sem omitir o campo. Nao use `config.github`, `job.command` ou `job.args` no CLI V1. Para GitHub ou comandos/argumentos explicitos, use a API avancada documentada, sem inventar flags ou comandos do CLI.
 
 `billed_minutes` e a duracao arredondada para cima, com minimo de 1 e maximo de 60 minutos. `price_per_minute`, `amount` e `total_amount` sao numeros em centavos de BRL e podem ser fracionarios; preserve o JSON para manter a precisao; apresentacoes humanas podem usar ate seis casas decimais para o preco por minuto e ate quatro para valores e totais. O valor terminal e calculado pelos minutos faturados vezes a tarifa vigente e armazenado exato, sem arredondamento para cima (uma execucao de R$ 0,0005 e guardada como `amount: 0.05`), com a tarifa aplicada. A duracao conta do inicio ao fim reais do container: agendamento e download da imagem nao sao cobrados. O custo do ciclo soma os valores persistidos, nao recalcula pelo catalogo atual.
 
