@@ -116,7 +116,7 @@ Para dominios personalizados, mantenha o dominio principal separado e aguarde DN
 
 O servidor MCP publica tools como `get_context`, `list_projects`, `get_project_logs`, `get_build_logs`, `get_project_network`, `get_project_health`, `get_project_autoscaling`, `get_valkey_status` e `list_ai_keys`. Alguns clientes exibem o nome do servidor como prefixo; com o servidor `zenifra`, `get_context` pode aparecer como `zenifra_get_context`. Nao adicione novamente o namespace do servidor a uma tool que ja o contenha. Consulte primeiro o contexto e o tipo do projeto; liste instancias antes de filtrar metricas ou logs, e liste builds antes de pedir os logs de um build.
 
-Conexoes Valkey permanecem mascaradas. Quando uma rotacao concluida devolver uma conexao utilizavel, use `--connection-file <path>` em um destino privado; o arquivo preserva exatamente a string retornada pelo backend. Nao inclua a conexao em mensagens, logs ou commits.
+Use `zenifra database status`, `zenifra database connection` e `zenifra database credentials rotate` para PostgreSQL, MariaDB, ClickHouse, Key Value, Cache e Queue. As conexoes permanecem mascaradas. Ao renovar a credencial, use `--connection-file <path>` em um destino privado; o arquivo e criado com modo 600 e, em Key Value, Cache e Queue, preserva exatamente a string retornada pelo backend. Nao inclua a conexao em mensagens, logs ou commits.
 
 Se voce rodar comandos incompletos como `zenifra deploy`, `zenifra deploy watch` ou `zenifra builds` sem os argumentos obrigatorios, a CLI agora mostra a ajuda especifica do comando em vez de apenas um erro curto.
 

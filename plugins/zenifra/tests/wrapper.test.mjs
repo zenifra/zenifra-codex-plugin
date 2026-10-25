@@ -110,7 +110,7 @@ test('documents public safety boundaries and CLI automation semantics', async ()
   assert.match(skill, /read back the final state/);
 });
 
-test('documents product-level mutation preflight and safe MCP/Valkey verification', async () => {
+test('documents product-level mutation preflight and safe MCP and database verification', async () => {
   const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const publicDocs = `${skill}\n${readme}`;
@@ -291,4 +291,20 @@ test('documents the Armazem storage commands and their safety boundaries', async
   assert.match(skill, /bucket with files can be removed only in the console/);
   assert.match(skill, /next_continuation_token/);
   assert.match(skill, /values are in cents/);
+});
+
+test('documents the database group for every managed database without the old command group', async () => {
+  const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+  const publicDocs = `${skill}\n${readme}`;
+
+  assert.match(skill, /## Database guidance/);
+  assert.match(skill, /zenifra database status --project <project-id>/);
+  assert.match(skill, /zenifra database connection --project <project-id>/);
+  assert.match(skill, /zenifra database credentials rotate --project <project-id>/);
+  assert.match(skill, /zenifra database credentials status --project <project-id> --operation <operation-id>/);
+  assert.match(skill, /PostgreSQL, MariaDB, and ClickHouse renew immediately and print the new password exactly once/);
+  assert.match(skill, /mode 600/);
+  assert.match(skill, /not databases/);
+  assert.doesNotMatch(publicDocs, /zenifra valkey/);
 });
