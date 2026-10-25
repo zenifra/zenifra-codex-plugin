@@ -110,7 +110,7 @@ test('documents public safety boundaries and CLI automation semantics', async ()
   assert.match(skill, /read back the final state/);
 });
 
-test('documents product-level mutation preflight and safe MCP/Valkey verification', async () => {
+test('documents product-level mutation preflight and safe MCP and database verification', async () => {
   const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   const publicDocs = `${skill}\n${readme}`;
@@ -151,14 +151,14 @@ test('documents the Scheduled Jobs CLI boundary and billing-cycle contract in ea
       advancedApi: /does not support `config\.github`, `job\.command`, or `job\.args`; use the documented advanced API/i,
       unavailable: /capability is unavailable.*do not invent a route.*403.*capability exists/i,
       envs: /required `envs` array.*Use `envs: \[\]`.*do not omit `envs`/i,
-      catalogUnavailable: /explicit `--type job` request must report that Scheduled Jobs is unavailable; the API response uses code `SCHEDULED_JOBS_UNAVAILABLE`/i,
+      catalogUnavailable: /explicit `--type jobs` request must report that Scheduled Jobs is unavailable; the API response uses code `SCHEDULED_JOBS_UNAVAILABLE`/i,
       nonZero: /any non-zero code, including `1`/i,
     },
   ];
 
   for (const surface of surfaces) {
     const { name, content } = surface;
-    assert.match(content, /zenifra plans --type job/, `${name}: missing Jobs catalog command`);
+    assert.match(content, /zenifra plans --type jobs/, `${name}: missing Jobs catalog command`);
     assert.match(content, /project runs --project <project-id>/, `${name}: missing runs command`);
     assert.match(content, /project runs logs --project <project-id> --run <run-id>/, `${name}: missing logs command`);
     assert.match(content, /project runs cancel --project <project-id> --run <run-id>/, `${name}: missing cancel command`);
@@ -236,7 +236,7 @@ test('documents the current CLI identity, lifecycle, plan, and build-log contrac
   assert.match(publicDocs, /loopback.*same machine|mesma maquina.*loopback/is);
   assert.match(publicDocs, /initial deployment history|historico inicial de deployment/i);
   assert.doesNotMatch(publicDocs, /does not expose a project deletion command/i);
-  assert.equal(manifest.version, '0.4.1');
+  assert.equal(manifest.version, '0.5.0');
   assert.equal(packageJson.version, manifest.version);
 });
 
@@ -253,7 +253,7 @@ test('requires an informed, target-specific confirmation immediately before proj
   assert.match(publicDocs, /explicit.*unambiguous.*affirmative/is);
   assert.match(publicDocs, /earlier.*generic.*authorization.*does not count/is);
   assert.match(publicDocs, /only after.*confirmation.*--yes/is);
-  assert.equal(manifest.version, '0.4.1');
+  assert.equal(manifest.version, '0.5.0');
   assert.equal(packageJson.version, manifest.version);
 });
 
@@ -275,4 +275,36 @@ test('documents GitHub deployment triggers and the release prerelease opt-in', a
   assert.match(publicDocs, /0\.4\.0/);
   assert.match(publicDocs, /installing the plugin does not install or update the CLI/i);
   assert.match(publicDocs, /read the settings again to verify|leia.*para conferir o modo efetivo/i);
+});
+
+test('documents the Armazem storage commands and their safety boundaries', async () => {
+  const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
+
+  assert.match(skill, /## Armazem \(object storage\) guidance/);
+  assert.match(skill, /zenifra storage` \(alias `zenifra armazem`\)/);
+  assert.match(skill, /https:\/\/armazem\.zenifra\.com/);
+  assert.match(skill, /br-sp1/);
+  assert.match(skill, /beta for invited organizations/);
+  assert.match(skill, /storage files upload --bucket <name> --file <path>/);
+  assert.match(skill, /storage keys create --name <name>/);
+  assert.match(skill, /secret access key exactly once/);
+  assert.match(skill, /bucket with files can be removed only in the console/);
+  assert.match(skill, /next_continuation_token/);
+  assert.match(skill, /values are in cents/);
+});
+
+test('documents the database group for every managed database without the old command group', async () => {
+  const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+  const publicDocs = `${skill}\n${readme}`;
+
+  assert.match(skill, /## Database guidance/);
+  assert.match(skill, /zenifra database status --project <project-id>/);
+  assert.match(skill, /zenifra database connection --project <project-id>/);
+  assert.match(skill, /zenifra database credentials rotate --project <project-id>/);
+  assert.match(skill, /zenifra database credentials status --project <project-id> --operation <operation-id>/);
+  assert.match(skill, /PostgreSQL, MariaDB, and ClickHouse renew immediately and print the new password exactly once/);
+  assert.match(skill, /mode 600/);
+  assert.match(skill, /not databases/);
+  assert.doesNotMatch(publicDocs, /zenifra valkey/);
 });

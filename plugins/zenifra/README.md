@@ -38,7 +38,7 @@ zenifra auth logout --revoke
 zenifra orgs
 zenifra org set
 zenifra projects --type http --page 1 --limit 15
-zenifra plans --type job --json
+zenifra plans --type jobs --json
 zenifra create project --name app-http-autoscaling --plan premium --payment-mode hourly --config @examples/http-autoscaling-project.json
 zenifra create project --name nightly-report --plan job-basic --payment-mode per_minute --config @job-config.json --idempotency-key <key>
 zenifra project info --project <project-id>
@@ -106,7 +106,7 @@ Use `zenifra project stop --project <project-id>` e `zenifra project resume --pr
 
 Projetos criados por imagem OCI passam a ter um historico inicial de deployment. Consulte-o com `zenifra deployments --project <project-id>` e continue distinguindo projeto criado, build concluido, deployment concluido e aplicacao pronta.
 
-Jobs agendados usam planos `job-*`, cobranca `per_minute`, uma imagem OCI pronta e cron de cinco campos em UTC. Eles nao possuem URL publica, porta, exposicao ou instancias. No CLI V1, use somente `zenifra plans --type job [--json]`, `zenifra create project ... --plan <job-plan> --payment-mode per_minute --config @<job-config.json> --idempotency-key <key>`, `zenifra project info --project <project-id>`, `zenifra project runs --project <project-id>`, `zenifra project runs logs --project <project-id> --run <run-id>` e `zenifra project runs cancel --project <project-id> --run <run-id>`. Esse fluxo aceita apenas `config.image`; `config.envs` e obrigatorio: use `envs: []` quando nao houver variaveis ou um array de objetos `{name, value}`, sem omitir o campo. Nao use `config.github`, `job.command` ou `job.args` no CLI V1. Para GitHub ou comandos/argumentos explicitos, use a API avancada documentada, sem inventar flags ou comandos do CLI.
+Jobs agendados usam planos `job-*`, cobranca `per_minute`, uma imagem OCI pronta e cron de cinco campos em UTC. Eles nao possuem URL publica, porta, exposicao ou instancias. No CLI V1, use somente `zenifra plans --type jobs [--json]`, `zenifra create project ... --plan <job-plan> --payment-mode per_minute --config @<job-config.json> --idempotency-key <key>`, `zenifra project info --project <project-id>`, `zenifra project runs --project <project-id>`, `zenifra project runs logs --project <project-id> --run <run-id>` e `zenifra project runs cancel --project <project-id> --run <run-id>`. Esse fluxo aceita apenas `config.image`; `config.envs` e obrigatorio: use `envs: []` quando nao houver variaveis ou um array de objetos `{name, value}`, sem omitir o campo. Nao use `config.github`, `job.command` ou `job.args` no CLI V1. Para GitHub ou comandos/argumentos explicitos, use a API avancada documentada, sem inventar flags ou comandos do CLI.
 
 `billed_minutes` e a duracao arredondada para cima, com minimo de 1 e maximo de 60 minutos. `price_per_minute`, `amount` e `total_amount` sao numeros em centavos de BRL e podem ser fracionarios; preserve o JSON para manter a precisao; apresentacoes humanas podem usar ate seis casas decimais para o preco por minuto e ate quatro para valores e totais. O valor terminal e calculado pelos minutos faturados vezes a tarifa vigente e armazenado exato, sem arredondamento para cima (uma execucao de R$ 0,0005 e guardada como `amount: 0.05`), com a tarifa aplicada. A duracao conta do inicio ao fim reais do container: agendamento e download da imagem nao sao cobrados. O custo do ciclo soma os valores persistidos, nao recalcula pelo catalogo atual.
 
@@ -116,7 +116,7 @@ Para dominios personalizados, mantenha o dominio principal separado e aguarde DN
 
 O servidor MCP publica tools como `get_context`, `list_projects`, `get_project_logs`, `get_build_logs`, `get_project_network`, `get_project_health`, `get_project_autoscaling`, `get_valkey_status` e `list_ai_keys`. Alguns clientes exibem o nome do servidor como prefixo; com o servidor `zenifra`, `get_context` pode aparecer como `zenifra_get_context`. Nao adicione novamente o namespace do servidor a uma tool que ja o contenha. Consulte primeiro o contexto e o tipo do projeto; liste instancias antes de filtrar metricas ou logs, e liste builds antes de pedir os logs de um build.
 
-Conexoes Valkey permanecem mascaradas. Quando uma rotacao concluida devolver uma conexao utilizavel, use `--connection-file <path>` em um destino privado; o arquivo preserva exatamente a string retornada pelo backend. Nao inclua a conexao em mensagens, logs ou commits.
+Use `zenifra database status`, `zenifra database connection` e `zenifra database credentials rotate` para PostgreSQL, MariaDB, ClickHouse, Key Value, Cache e Queue. As conexoes permanecem mascaradas. Ao renovar a credencial, use `--connection-file <path>` em um destino privado; o arquivo e criado com modo 600 e, em Key Value, Cache e Queue, preserva exatamente a string retornada pelo backend. Nao inclua a conexao em mensagens, logs ou commits.
 
 Se voce rodar comandos incompletos como `zenifra deploy`, `zenifra deploy watch` ou `zenifra builds` sem os argumentos obrigatorios, a CLI agora mostra a ajuda especifica do comando em vez de apenas um erro curto.
 
