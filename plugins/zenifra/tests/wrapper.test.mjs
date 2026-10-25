@@ -151,14 +151,14 @@ test('documents the Scheduled Jobs CLI boundary and billing-cycle contract in ea
       advancedApi: /does not support `config\.github`, `job\.command`, or `job\.args`; use the documented advanced API/i,
       unavailable: /capability is unavailable.*do not invent a route.*403.*capability exists/i,
       envs: /required `envs` array.*Use `envs: \[\]`.*do not omit `envs`/i,
-      catalogUnavailable: /explicit `--type job` request must report that Scheduled Jobs is unavailable; the API response uses code `SCHEDULED_JOBS_UNAVAILABLE`/i,
+      catalogUnavailable: /explicit `--type jobs` request must report that Scheduled Jobs is unavailable; the API response uses code `SCHEDULED_JOBS_UNAVAILABLE`/i,
       nonZero: /any non-zero code, including `1`/i,
     },
   ];
 
   for (const surface of surfaces) {
     const { name, content } = surface;
-    assert.match(content, /zenifra plans --type job/, `${name}: missing Jobs catalog command`);
+    assert.match(content, /zenifra plans --type jobs/, `${name}: missing Jobs catalog command`);
     assert.match(content, /project runs --project <project-id>/, `${name}: missing runs command`);
     assert.match(content, /project runs logs --project <project-id> --run <run-id>/, `${name}: missing logs command`);
     assert.match(content, /project runs cancel --project <project-id> --run <run-id>/, `${name}: missing cancel command`);
