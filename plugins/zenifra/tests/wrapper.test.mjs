@@ -276,3 +276,19 @@ test('documents GitHub deployment triggers and the release prerelease opt-in', a
   assert.match(publicDocs, /installing the plugin does not install or update the CLI/i);
   assert.match(publicDocs, /read the settings again to verify|leia.*para conferir o modo efetivo/i);
 });
+
+test('documents the Armazem storage commands and their safety boundaries', async () => {
+  const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
+
+  assert.match(skill, /## Armazem \(object storage\) guidance/);
+  assert.match(skill, /zenifra storage` \(alias `zenifra armazem`\)/);
+  assert.match(skill, /https:\/\/armazem\.zenifra\.com/);
+  assert.match(skill, /br-sp1/);
+  assert.match(skill, /beta for invited organizations/);
+  assert.match(skill, /storage files upload --bucket <name> --file <path>/);
+  assert.match(skill, /storage keys create --name <name>/);
+  assert.match(skill, /secret access key exactly once/);
+  assert.match(skill, /bucket with files can be removed only in the console/);
+  assert.match(skill, /next_continuation_token/);
+  assert.match(skill, /values are in cents/);
+});
