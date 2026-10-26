@@ -236,7 +236,7 @@ test('documents the current CLI identity, lifecycle, plan, and build-log contrac
   assert.match(publicDocs, /loopback.*same machine|mesma maquina.*loopback/is);
   assert.match(publicDocs, /initial deployment history|historico inicial de deployment/i);
   assert.doesNotMatch(publicDocs, /does not expose a project deletion command/i);
-  assert.equal(manifest.version, '0.5.0');
+  assert.equal(manifest.version, '0.5.1');
   assert.equal(packageJson.version, manifest.version);
 });
 
@@ -253,7 +253,7 @@ test('requires an informed, target-specific confirmation immediately before proj
   assert.match(publicDocs, /explicit.*unambiguous.*affirmative/is);
   assert.match(publicDocs, /earlier.*generic.*authorization.*does not count/is);
   assert.match(publicDocs, /only after.*confirmation.*--yes/is);
-  assert.equal(manifest.version, '0.5.0');
+  assert.equal(manifest.version, '0.5.1');
   assert.equal(packageJson.version, manifest.version);
 });
 
@@ -307,4 +307,10 @@ test('documents the database group for every managed database without the old co
   assert.match(skill, /mode 600/);
   assert.match(skill, /not databases/);
   assert.doesNotMatch(publicDocs, /zenifra valkey/);
+});
+
+test('describes the Armazem without other companies product names', async () => {
+  const skill = await readFile(new URL('../skills/zenifra/SKILL.md', import.meta.url), 'utf8');
+  const storage = skill.slice(skill.indexOf('zenifra storage'), skill.indexOf('zenifra storage') + 3000);
+  assert.doesNotMatch(storage, /\bS3\b|\bAWS\b|amazon/i);
 });
